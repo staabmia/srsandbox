@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stone Calculator</title>
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://srsandbox-staabmia.netlify.app/stone-calc">
+    <link rel="stylesheet" href="stone-calc-styles.css">
+    <link rel="icon" href="images/favicon.ico" type="image/x-icon">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body class="dark-mode" onload="loadDataFromUrl()">
+
+    <!-- Navigation -->
+    <nav class="topbar">
+        <div class="topbar-left">
+            <div class="dropdown">
+                <button class="dropbtn">☰ &nbsp;Menu</button>
+                <div class="dropdown-content">
+                    <a href="index.html">Speedrun Sandbox</a>
+                    <a href="stone-calc.html">Stone Calculator</a>
+                </div>
+            </div>
+            <div class="topbar-brand">
+                <img src="images/android-chrome-512x512_nb.PNG" class="brand-icon-img" alt="Stone Calc">
+                <span class="brand-name">Stone Calculator</span>
+            </div>
+        </div>
+        <div class="topbar-right">
+            <div class="mode-toggle">
+                <label for="modeToggle" class="mode-label">Dark Mode</label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="modeToggle">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+    </nav>
+
+    <div class="notice-bar">
+        Looking for the old stable version? It's available at <a id="oldSiteLink" href="https://srsandbox-old.netlify.app/stone-calc" target="_blank" rel="noopener">srsandbox-old.netlify.app/stone-calc</a>
+    </div>
+
+    <div class="page-wrapper">
+        <div class="container">
+
+            <!-- Artifact Selection -->
+            <section class="card">
+                <div class="card-header collapsible" onclick="toggleArtifactCard(this)">
+                    
+                    <h2 class="card-title">Artifact Selection</h2>
+                    <span class="card-chevron">▲</span>
+                </div>
+                <div class="card-body">
+                    <div class="arti-grid">
+                        <div class="arti-slot">
+                            <label class="arti-label" id="Arti1ID">Deflector</label>
+                            <div class="arti-dropdown">
+                                <select id="Defl"><option value="">Option 1</option></select>
+                            </div>
+                            <img id="Defl-large-img" class="large-img" alt="">
+                        </div>
+                        <div class="arti-slot">
+                            <label class="arti-label">Metronome</label>
+                            <div class="arti-dropdown">
+                                <select id="Metro"><option value="">Option 1</option></select>
+                            </div>
+                            <img id="Metro-large-img" class="large-img" alt="">
+                        </div>
+                        <div class="arti-slot">
+                            <label class="arti-label">Compass</label>
+                            <div class="arti-dropdown">
+                                <select id="Comp"><option value="">Option 1</option></select>
+                            </div>
+                            <img id="Comp-large-img" class="large-img" alt="">
+                        </div>
+                        <div class="arti-slot">
+                            <label class="arti-label">Gusset</label>
+                            <div class="arti-dropdown">
+                                <select id="Gusset"><option value="">Option 1</option></select>
+                            </div>
+                            <img id="Gusset-large-img" class="large-img" alt="">
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Colleggtibles -->
+            <section class="card">
+                <div class="card-header collapsible" onclick="toggleCard(this)">
+                    
+                    <h2 class="card-title">Colleggtibles</h2>
+                    <span class="card-chevron">▲</span>
+                </div>
+                <div class="card-body">
+                    <div class="collegg-grid">
+                        <div class="collegg-group">
+                            <label class="field-label-center" id="ShipColleggId">Shipping</label>
+                            <div class="collegg-row">
+                                <div class="collegg-item">
+                                    <img src="https://staabass.netlify.app/images/egg_carbonfiber.png" width="40" height="40" alt="Carbon Fiber" title="Carbon Fiber" id="CFid">
+                                    <select id="ShipColleggtibles">
+                                        <option value="">5%</option>
+                                        <option value="">3%</option>
+                                        <option value="">2%</option>
+                                        <option value="">1%</option>
+                                        <option value="">0%</option>
+                                    </select>
+                                </div>
+                                <div class="collegg-item">
+                                    <img src="https://staabass.netlify.app/images/egg_pumpkin.png" width="40" height="40" alt="Pumpkin" title="Pumpkin" id="Pumpkinid">
+                                    <select id="ShipColleggtibles2">
+                                        <option value="">5%</option>
+                                        <option value="">3%</option>
+                                        <option value="">2%</option>
+                                        <option value="">1%</option>
+                                        <option value="">0%</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="collegg-group">
+                            <label class="field-label-center" id="ELRlabelid">Lay Rate</label>
+                            <div class="collegg-item">
+                                <img src="https://eggincassets.pages.dev/64/egginc/egg_silicon.png" width="40" height="40" alt="Silicon" title="Silicon" id="SiliconID">
+                                <select id="ELRColleggtibles">
+                                    <option value="">5%</option>
+                                    <option value="">3%</option>
+                                    <option value="">2%</option>
+                                    <option value="">1%</option>
+                                    <option value="">0%</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="collegg-group">
+                            <label class="field-label-center" id="Hablabelid">Hab Capacity</label>
+                            <div class="collegg-item">
+                                <img src="https://eggincassets.pages.dev/64/egginc/egg_pegg.png" width="40" height="40" alt="Pegg" title="Pegg" id="PeggID">
+                                <select id="HabColleggtibles">
+                                    <option value="">5%</option>
+                                    <option value="">3%</option>
+                                    <option value="">2%</option>
+                                    <option value="">1%</option>
+                                    <option value="">0%</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Parameters -->
+            <section class="card" id="ParamsCardID">
+                <div class="card-header collapsible" onclick="toggleCard(this)">
+                    
+                    <h2 class="card-title">Parameters</h2>
+                    <span class="card-chevron">▲</span>
+                </div>
+                <div class="card-body params-body">
+
+                    <div class="param-group" id="ModifiersID">
+                        <span class="param-label">Modifier Multiplier</span>
+                        <div class="param-controls">
+                            <select id="Modifiers">
+                                <option value="">Hab Capacity</option>
+                                <option value="">Lay Rate</option>
+                                <option value="">Shipping Rate</option>
+                            </select>
+                            <span class="param-input-unit" id="ValuePadID">
+                                <input type="number" id="ModifierMultiplier" min="0" max="100" step="0.01" value="1">
+                                <span class="unit-badge">×</span>
+                            </span>
+                        </div>
+                        <span class="param-hint">e.g. +5% → 1.05</span>
+                    </div>
+
+                    <div class="param-group" id="DeflID">
+                        <span class="param-label">Deflector Bonus</span>
+                        <div class="param-controls">
+                            <select id="DeflectorSelect">
+                                <option value="">From Coop Mates</option>
+                                <option value="">Total (incl. yours)</option>
+                            </select>
+                            <span class="param-input-unit" id="PercID">
+                                <input type="number" id="DeflBonus" min="0" max="10000" value="0">
+                                <span class="unit-badge">%</span>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="param-group" id="ELRRowID">
+                        <span class="param-label">Egg Laying Rate</span>
+                        <div class="param-controls">
+                            <input type="number" id="ELRCurr" min="0" max="9999999999" value="10" onkeyup=enforceMinMaxDec(this)>
+                            <select id="eggUnitELR">
+                                <option value="T/min">T/min</option>
+                                <option value="q/min">q/min</option>
+                                <option value="T/hr">T/hr</option>
+                                <option value="q/hr">q/hr</option>
+                            </select>
+                            <span class="param-hint">no artifacts</span>
+                        </div>
+                    </div>
+
+                    <div class="param-group" id="SRRowID">
+                        <span class="param-label">Shipping Capacity</span>
+                        <div class="param-controls">
+                            <input type="number" id="SRCurr" min="0" max="9999999999" value="10" onkeyup=enforceMinMaxDec(this)>
+                            <select id="eggUnitSR">
+                                <option value="T/min">T/min</option>
+                                <option value="q/min">q/min</option>
+                                <option value="T/hr">T/hr</option>
+                                <option value="q/hr">q/hr</option>
+                            </select>
+                            <span class="param-hint">no artifacts</span>
+                        </div>
+                    </div>
+
+                    <div class="param-group" id="PopCurrentRowID">
+                        <label class="param-label" id="PopCurrentID">Current Population</label>
+                        <div class="param-controls">
+                            <input type="text" id="PopCurrent" value="8,000,000"
+                                   pattern="^\d{1,3}(?:,\d{3})*$"
+                                   title="e.g. 8,000,000">
+                        </div>
+                    </div>
+
+                    <div class="param-group" id="HabCapRowID">
+                        <label class="param-label" id="HabCapID">Hab Capacity</label>
+                        <div class="param-controls">
+                            <input type="text" id="HabCap" value="8,000,000"
+                                   pattern="^\d{1,3}(?:,\d{3})*$"
+                                   title="e.g. 8,000,000">
+                            <span class="param-hint">with Gusset if applicable</span>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+
+            <!-- Results -->
+            <div class="results-area">
+            <table id="resultsTable"></table>
+
+            <h3 class="section-heading">Comments</h3>
+            <div id="info2Container"></div>
+            <div id="info3Container"></div>
+
+            <div id="coopOutput" style="display:none;">
+                <hr class="section-divider">
+                <pre id="coopLines"></pre>
+                <button id="copyCoopBtn">📋 Copy</button>
+            </div>
+
+            <div class="button-row">
+                <button id="assVis">View Assumptions</button>
+                <button id="toggleStoneCutOff">View Stone Cut Off Table</button>
+            </div>
+
+            <h3 id="assHead" class="section-heading" style="display:none">Assumptions</h3>
+            <div id="assContainer" style="display:none"></div>
+            <div class="stone-cutoff-wrapper">
+                <table id="stoneCutOff"></table>
+            </div>
+
+            </div><!-- end results-area -->
+    </div>
+
+    <script>
+    function toggleCard(header) {
+        const body = header.nextElementSibling;
+        const chevron = header.querySelector('.card-chevron');
+        const collapsed = body.classList.toggle('card-body--collapsed');
+        chevron.style.transform = collapsed ? 'rotate(180deg)' : '';
+        const key = 'card-collapsed:' + header.querySelector('.card-title').textContent.trim();
+        localStorage.setItem(key, collapsed ? '1' : '0');
+    }
+
+    // Artifact card: only collapse the dropdowns (label+image stay visible)
+    function toggleArtifactCard(header) {
+        const card = header.closest('.card');
+        const chevron = header.querySelector('.card-chevron');
+        const dropdowns = card.querySelectorAll('.arti-dropdown');
+        const labels = card.querySelectorAll('.arti-label');
+        const isCollapsed = dropdowns[0].classList.contains('arti-dropdown--hidden');
+        dropdowns.forEach(d => d.classList.toggle('arti-dropdown--hidden', !isCollapsed));
+        labels.forEach(l => l.classList.toggle('arti-dropdown--hidden', !isCollapsed));
+        chevron.style.transform = !isCollapsed ? 'rotate(180deg)' : '';
+        const key = 'card-collapsed:Artifact Selection';
+        localStorage.setItem(key, !isCollapsed ? '1' : '0');
+    }
+
+    function applyCollapsedStates() {
+        document.querySelectorAll('.card-header.collapsible').forEach(header => {
+            const titleEl = header.querySelector('.card-title');
+            const title = titleEl ? titleEl.textContent.trim() : '';
+            const key = 'card-collapsed:' + title;
+            const stored = localStorage.getItem(key);
+            if (stored === '1') {
+                if (title === 'Artifact Selection') {
+                    const card = header.closest('.card');
+                    const chevron = header.querySelector('.card-chevron');
+                    card.querySelectorAll('.arti-dropdown').forEach(d => d.classList.add('arti-dropdown--hidden'));
+                    card.querySelectorAll('.arti-label').forEach(l => l.classList.add('arti-dropdown--hidden'));
+                    chevron.style.transform = 'rotate(180deg)';
+                } else {
+                    const body = header.nextElementSibling;
+                    const chevron = header.querySelector('.card-chevron');
+                    body.classList.add('card-body--collapsed');
+                    chevron.style.transform = 'rotate(180deg)';
+                }
+            }
+        });
+    }
+
+    // Run immediately and again after everything (including external JS) has loaded
+    applyCollapsedStates();
+    window.addEventListener('load', () => setTimeout(applyCollapsedStates, 0));
+    </script>
+    <script src="scriptsStoneCalc.js"></script>
+</body>
+</html>

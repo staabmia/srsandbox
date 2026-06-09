@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speedrun Sandbox</title>
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://srsandbox-staabmia.netlify.app/">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="images/CS.ico" type="image/x-icon">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script>
+    function toggleCard(header) {
+        const body = header.nextElementSibling;
+        const chevron = header.querySelector('.card-chevron');
+        const collapsed = body.classList.toggle('card-body--collapsed');
+        chevron.style.transform = collapsed ? 'rotate(180deg)' : '';
+        const key = 'card-collapsed:' + header.querySelector('.card-title').textContent.trim();
+        localStorage.setItem(key, collapsed ? '1' : '0');
+    }
+    </script>
+    <!-- Inject collapsed state before first paint to prevent flash -->
+    <script>
+    (function () {
+        const rules = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (k.startsWith('card-collapsed:') && localStorage.getItem(k) === '1') {
+                const title = k.slice('card-collapsed:'.length);
+                // Build a CSS rule that hides the card-body following a header containing this title
+                rules.push(
+                    `.collapsible[data-title="${CSS.escape(title)}"] + .card-body { display: none !important; }`
+                );
+            }
+        }
+        if (rules.length) {
+            const style = document.createElement('style');
+            style.id = 'card-collapsed-fouc';
+            style.textContent = rules.join('\n');
+            document.head.appendChild(style);
+        }
+    })();
+    </script>
+</head>
+<body class="dark-mode">
+
+    <!-- Navigation -->
+    <nav class="topbar">
+        <div class="topbar-left">
+            <div class="dropdown">
+                <button class="dropbtn">☰ &nbsp;Menu</button>
+                <div class="dropdown-content">
+                    <a href="index.html">Speedrun Sandbox</a>
+                    <a href="stone-calc.html">Stone Calculator</a>
+                </div>
+            </div>
+            <div class="topbar-brand">
+                <img src="images/CS.ico" class="brand-icon-img" alt="CS">
+                <span class="brand-name">Speedrun Sandbox</span>
+            </div>
+        </div>
+        <div class="topbar-center">
+            <div class="segment-control topbar-segment">
+                <span class="segment-label">Old Runs<br><small>Before 12/22/2025</small></span>
+                <label class="switch">
+                    <input type="checkbox" id="cxpToggle" checked="true">
+                    <span class="slider"></span>
+                </label>
+                <span class="segment-label active">New Runs<br><small>After 12/22/2025</small></span>
+            </div>
+        </div>
+        <div class="topbar-right">
+            <div class="mode-toggle">
+                <label for="modeToggle" class="mode-label">Dark Mode</label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="modeToggle">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+    </nav>
+
+    <div class="notice-bar">
+        Looking for the old stable version? It's available at <a id="oldSiteLink" href="https://srsandbox-old.netlify.app/" target="_blank" rel="noopener">srsandbox-old.netlify.app</a>
+    </div>
+
+    <div id="urlErrorBar" class="error-bar" style="display:none;">
+        ⚠️ Error parsing URL data — the link may be corrupted. Refreshing the page may fix the issue. Otherwise, remove <code>?data=</code> and everything after it from the URL.
+    </div>
+
+    <div class="page-wrapper">
+        <div class="container">
+
+            <!-- Speedrun Information -->
+            <section class="card">
+                <div class="card-header collapsible" data-title="Speedrun Information" onclick="toggleCard(this)">
+                    <span class="card-icon">🏃</span>
+                    <h2 class="card-title">Speedrun Information</h2>
+                    <span class="card-chevron">▲</span>
+                </div>
+                <div class="card-body">
+
+                    <!-- IMPORTANT: These two rows use class="controls" so scripts.js can find
+                         them via .closest(".controls") to show/hide based on cxpToggle -->
+                    <div class="controls field-row">
+                        <label for="crtToggle" id="crtToggleLbl" class="field-label">
+                            Chicken Runs Maxed? <span class="info-tip" data-tip="Chicken Runs not maxed: coopSize−1 used for CRs.">?</span>
+                        </label>
+                        <label class="pill-toggle">
+                            <input type="checkbox" id="crtToggle" checked>
+                            <span class="pill-track">
+                                <span class="pill-thumb"></span>
+                                <span class="pill-text-on">YES</span>
+                                <span class="pill-text-off">NO</span>
+                            </span>
+                        </label>
+                    </div>
+
+                    <div class="controls field-row">
+                        <label for="tokenToggle" id="tokenToggleLabel" class="field-label">
+                            Token Value Maxed? <span class="info-tip" data-tip="Token Value not maxed: Sent=0 used.">?</span>
+                        </label>
+                        <label class="pill-toggle">
+                            <input type="checkbox" id="tokenToggle" checked>
+                            <span class="pill-track">
+                                <span class="pill-thumb"></span>
+                                <span class="pill-text-on">YES</span>
+                                <span class="pill-text-off">NO</span>
+                            </span>
+                        </label>
+                    </div>
+
+                    <div class="field-row">
+                        <label for="GGToggle" class="field-label">Generous Gifts?</label>
+                        <label class="pill-toggle">
+                            <input type="checkbox" id="GGToggle">
+                            <span class="pill-track">
+                                <span class="pill-thumb"></span>
+                                <span class="pill-text-on">YES</span>
+                                <span class="pill-text-off">NO</span>
+                            </span>
+                        </label>
+                    </div>
+
+                    <div class="field-row">
+                        <label for="crttime" class="field-label">Join Delay <span class="info-tip" data-tip="The amount of time between coop creation and players joining.">?</span></label>
+                        <div class="input-with-unit">
+                            <input type="number" id="crttime" min="0" value="0" onkeyup=enforceMinMaxDec(this)>
+                            <span class="unit-badge">sec</span>
+                        </div>
+                    </div>
+
+                    <div class="field-row">
+                        <label for="mpft" class="field-label">Min/TokenGift/Player <span class="info-tip" data-tip="Determines how lucky token farming is: 10 is a pretty lucky run, 13 average.">?</span></label>
+                        <div class="input-with-unit">
+                            <input type="number" id="mpft" min="1" value="13" onkeyup=enforceMinMaxDec(this)>
+                            <span class="unit-badge">min</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Contract Information -->
+            <section class="card">
+                <div class="card-header collapsible" data-title="Contract Information" onclick="toggleCard(this)">
+                    <span class="card-icon">📋</span>
+                    <h2 class="card-title">Contract Information</h2>
+                    <span class="card-chevron">▲</span>
+                </div>
+                <div class="card-body">
+                    <div class="field-row">
+                        <label for="contractNameInput" class="field-label">Contract Name</label>
+                        <input type="text" id="contractNameInput" placeholder="Optional…" class="text-input-wide">
+                    </div>
+                    <div class="field-row">
+                        <label for="duration" class="field-label">Duration</label>
+                        <div class="input-select-group">
+                            <input type="number" id="duration" min="0" value="7" onkeyup=enforceMinMaxDec(this)>
+                            <select id="durUnit">
+                                <option value="days">days</option>
+                                <option value="hours">hours</option>
+                                <option value="minutes">minutes</option>
+                                <option value="seconds">seconds</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="field-row">
+                        <label for="targetEggAmount" class="field-label">Target Eggs</label>
+                        <div class="input-select-group">
+                            <input type="number" id="targetEggAmount" min="0" value="500" step="100" onkeyup=enforceMinMaxDec(this)>
+                            <select id="eggUnit">
+                                <option value="q">q</option>
+                                <option value="Q">Q</option>
+                                <option value="T">T</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="field-row">
+                        <label for="tokenTimer" class="field-label">Token Timer</label>
+                        <div class="input-with-unit">
+                            <input type="number" id="tokenTimer" min="1" value="60" onkeyup=enforceMinMaxDec(this)>
+                            <span class="unit-badge">min</span>
+                        </div>
+                    </div>
+                    <div class="field-row">
+                        <label for="modifiers" class="field-label">Modifier Multiplier</label>
+                        <div class="input-select-group">
+                            <input type="number" id="modifiers" min="0.01" max="1000" value="1" step="0.01" onkeyup=enforceMinMaxDec(this)>
+                            <select name="mod-name" id="mod-name">
+                                <option value="Hab Space">Hab Space</option>
+                                <option value="IHR">IHR</option>
+                                <option value="ShipRate">Ship Rate</option>
+                                <option value="LayRate">Lay Rate</option>
+                            </select>
+                            <span class="hint-text">e.g. +5% → 1.05</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Player Generation -->
+            <section class="card">
+                <div class="card-header collapsible" data-title="Player Generation" onclick="toggleCard(this)">
+                    <span class="card-icon">👥</span>
+                    <h2 class="card-title">Player Generation</h2>
+                    <span class="card-chevron">▲</span>
+                </div>
+                <div class="card-body">
+                    <div class="field-row">
+                        <label for="numPlayers" class="field-label">Coop Size</label>
+                        <div class="input-select-group">
+                            <input type="number" id="numPlayers" min="1" max="70" value="1" onkeyup=enforceMinMax(this)>
+                            <select name="artiQual" id="artiQual">
+                                <option value="Sus">All T4L</option>
+                                <option value="Leg">T4C Defl+T4L</option>
+                                <option value="Epic">T4C Defl+T4E</option>
+                                <option value="Rare">T3R Defl+T4R</option>
+                            </select>
+                            <label for="numTEDefault" class="field-label" style="width:auto;text-align:left;padding-left:8px;">Generated Player TE</label>
+                            <input type="number" id="numTEDefault" min="0" max="999" value="50" onkeyup=enforceMinMax(this)>
+                        </div>
+                    </div>
+
+                    <div class="divider-or"><span>or</span></div>
+
+                    <div class="field-row field-row--stack">
+                        <label for="QPlayerInput" class="field-label">Quick Deflector Input</label>
+                        <div class="qinput-block">
+                            <input type="text" id="QPlayerInput" placeholder="e.g. 5 2 0 1" class="qinput-field">
+                            <p class="hint-text">Space-separated by quality: L → E → R → C<br>"5 0 1" = 5L, 1R &nbsp;·&nbsp; "0 1 0 3" = 1E, 3C</p>
+                            <small id="errorMsg" style="color:#ff6b6b;display:none;">⚠ Max 5 numbers allowed.</small>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <script>
+                const input = document.getElementById("QPlayerInput");
+                const errorMsg = document.getElementById("errorMsg");
+                input.addEventListener("input", function () {
+                    let clean = this.value.replace(/[^\d\s]/g, '');
+                    const entries = clean.trim().split(/\s+/).filter(n => n !== '');
+                    if (entries.length > 5) {
+                        clean = entries.slice(0, 5).join(' ') + ' ';
+                        errorMsg.style.display = 'inline';
+                    } else {
+                        errorMsg.style.display = 'none';
+                    }
+                    this.value = clean;
+                });
+                input.onchange = () => QPInRun();
+            </script>
+
+            <!-- Dynamic Output Areas -->
+            <div id="infoContainer"></div>
+            <div id="playersContainer"></div>
+            <div id="boostOrderContainer"></div>
+            <div id="optimizeOrderContainer" style="margin-bottom:20px"></div>
+            <div id="runContainer" style="margin-top:20px"></div>
+            <div id="run"></div>
+            <div id="resultsContainer"></div>
+            <table id="coopTable"></table>
+            <div id="SIABSwapContainer"></div>
+
+            <div class="field-row btv-row">
+                <label for="btvTarget" id="btvTargetLabel" class="field-label">BTV / CompTime Target</label>
+                <input type="number" id="btvTarget" min="0" max="2" value="1.875" step="0.1" onkeyup=enforceMinMaxDec(this)>
+            </div>
+
+            <button id="saveReference">💾 Save Current Results To Ref CS Column</button>
+
+            <table id="playersTable"></table>
+
+            <div class="button-row">
+                <button id="toggleInfo2Btn">ℹ️ More Info &amp; Assumptions</button>
+                <button id="runScenariosBtn">Estimate CS Ranges</button>
+                <button id="runTokenScenariosBtn">Optimize Tokens for Max CS <span class="badge-beta">beta</span></button>
+                <button id="runTokenScenariosMeanBtn">Optimize for Mean CS <span class="badge-beta">beta</span></button>
+            </div>
+
+            <div id="info2Container" class="hidden"></div>
+
+            <div id="scenarioOutputContainer" class="hidden scenario-output-wrapper">
+                <button id="copyScenarioBtn">📋 Copy Results</button>
+                <textarea id="scenarioOutput" rows="10" cols="80" readonly></textarea>
+                <div id="scenarioHtmlOutput"></div>
+            </div>
+
+            <div id="savedPlayerContainer"></div>
+
+        </div>
+    </div>
+
+    <!-- Sticky Summary Panel -->
+    <div id="stickySummary">
+        <div id="stickySummaryHeader">
+            <span>📊 CS Summary</span>
+            <span id="stickySummaryToggleIcon">▲</span>
+        </div>
+        <div id="stickySummaryBody">
+            <div id="stickySummaryCoopStats" class="sticky-coop-stats"></div>
+            <table id="stickySummaryTable">
+                <thead><tr id="stickySummaryHead"></tr></thead>
+                <tbody id="stickySummaryRows"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="scripts.js"></script>
+
+    <script>
+    // ── Sticky Summary Panel ──────────────────────
+    (function () {
+        const panel      = document.getElementById('stickySummary');
+        const header     = document.getElementById('stickySummaryHeader');
+        const body       = document.getElementById('stickySummaryBody');
+        const toggleIcon = document.getElementById('stickySummaryToggleIcon');
+        const headRow    = document.getElementById('stickySummaryHead');
+        const bodyRows   = document.getElementById('stickySummaryRows');
+        const coopStats  = document.getElementById('stickySummaryCoopStats');
+        const sourceTable = document.getElementById('playersTable');
+        const coopTable   = document.getElementById('coopTable');
+
+        let collapsed = false;
+
+        header.addEventListener('click', () => {
+            collapsed = !collapsed;
+            body.classList.toggle('collapsed', collapsed);
+            toggleIcon.textContent = collapsed ? '▼' : '▲';
+        });
+
+        function refreshCoopStats() {
+            const rows = coopTable.querySelectorAll('tr');
+            if (rows.length < 2) { coopStats.innerHTML = ''; return; }
+            const cells = rows[1].querySelectorAll('td');
+            const maxCSCell  = cells[2];
+            const meanCSCell = cells[3];
+            if (!maxCSCell || !meanCSCell) { coopStats.innerHTML = ''; return; }
+
+            function statHTML(cell, label, refKey) {
+                const firstText = Array.from(cell.childNodes)
+                    .find(n => n.nodeType === Node.TEXT_NODE);
+                const val = firstText ? firstText.textContent.trim() : (cell.textContent.trim().split(' ')[0] || '—');
+                if (!val) return '';
+
+                const refVal = parseFloat(cell.dataset[refKey]);
+                const curVal = parseFloat(val);
+                let deltaSpan = '';
+                let refLine = '';
+                if (!isNaN(refVal) && !isNaN(curVal)) {
+                    const diff = Math.round((curVal - refVal) * 1e2) / 1e2;
+                    const sign = diff > 0 ? '+' : '';
+                    const colour = diff > 0 ? 'var(--green,#34d399)' : diff < 0 ? 'var(--red,#f87171)' : 'var(--text-muted)';
+                    if (diff !== 0) deltaSpan = ` <span style="color:${colour};font-size:10px">(${sign}${diff})</span>`;
+                    refLine = `<span style="font-size:9px;color:var(--text-muted);white-space:nowrap">ref:${refVal}</span>`;
+                }
+                return `<div style="display:flex;flex-direction:column;min-width:0">
+                    <span class="coop-stat-label">${label}</span>
+                    <span class="coop-stat-value" style="white-space:nowrap">${val}${deltaSpan}</span>
+                    ${refLine}
+                </div>`;
+            }
+
+            const maxHTML  = statHTML(maxCSCell,  'max CS',  'refMax');
+            const meanHTML = statHTML(meanCSCell, 'mean CS', 'refMean');
+            if (!maxHTML && !meanHTML) { coopStats.innerHTML = ''; return; }
+            coopStats.innerHTML = maxHTML + `<div class="coop-stat-sep"></div>` + meanHTML;
+        }
+
+        function refreshSummary() {
+            const rows = sourceTable.querySelectorAll('tbody tr, tr:not(:first-child)');
+            const headerCells = sourceTable.querySelectorAll('th');
+
+            // Find column indices
+            let nameIdx = -1, csIdx = -1, refIdx = -1;
+            headerCells.forEach((th, i) => {
+                const text = th.textContent.trim().toLowerCase();
+                if (text === 'player') nameIdx = i;
+                if (text === 'cs') csIdx = i;
+                if (th.classList.contains('reference-col')) refIdx = i;
+            });
+
+            // Fallback: player is col 0, CS is last col before ref
+            if (nameIdx === -1) nameIdx = 0;
+            if (csIdx === -1) csIdx = headerCells.length - 1 - (refIdx !== -1 ? 1 : 0);
+
+            const dataRows = Array.from(rows).filter(r => r.querySelectorAll('td').length > 1);
+
+            // Always show the panel (even with 0 rows — shows empty state)
+            panel.classList.add('visible');
+
+            // Build header
+            headRow.innerHTML = '';
+            const headers = ['Player', 'CS'];
+            if (refIdx !== -1) headers.push('Ref CS');
+            headers.forEach(h => {
+                const th = document.createElement('th');
+                th.textContent = h;
+                headRow.appendChild(th);
+            });
+
+            // Build rows
+            bodyRows.innerHTML = '';
+
+            if (dataRows.length === 0) {
+                const tr = document.createElement('tr');
+                const td = document.createElement('td');
+                td.colSpan = refIdx !== -1 ? 3 : 2;
+                td.textContent = 'No results yet';
+                td.style.cssText = 'color:var(--text-muted);font-style:italic;text-align:center;padding:10px 8px;';
+                tr.appendChild(td);
+                bodyRows.appendChild(tr);
+                return;
+            }
+
+            dataRows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length === 0) return;
+
+                const tr = document.createElement('tr');
+
+                // Name
+                const nameTd = document.createElement('td');
+                nameTd.textContent = cells[nameIdx]?.textContent?.trim() || '';
+                tr.appendChild(nameTd);
+
+                // CS — may contain "95<br>(+2)" from scripts.js
+                const csTd = document.createElement('td');
+                const sourceCS = cells[csIdx];
+                const csRaw = sourceCS?.innerHTML?.trim() || '';
+                const csParts = csRaw.split(/<br\s*\/?>/i);
+                if (csParts.length > 1) {
+                    csTd.innerHTML = csParts[0].trim() + '<br><span class="diff-line">' + csParts[1].trim() + '</span>';
+                } else {
+                    // Always render two lines so row height is stable
+                    csTd.innerHTML = (sourceCS?.textContent?.trim() || '') + '<br><span class="diff-line">&nbsp;</span>';
+                }
+                if (sourceCS?.classList.contains('increase')) csTd.classList.add('increase');
+                if (sourceCS?.classList.contains('decrease')) csTd.classList.add('decrease');
+                tr.appendChild(csTd);
+
+                // Ref CS — always render two lines for stable height
+                if (refIdx !== -1) {
+                    const refTd = document.createElement('td');
+                    const refSource = cells[refIdx];
+                    const refRaw = refSource?.textContent?.trim() || '';
+                    const match = refRaw.match(/^([^\(]+)(\(.*\))?$/s);
+                    const mainVal = match ? match[1].trim() : refRaw;
+                    const diffVal = (match && match[2]) ? match[2].trim() : '&nbsp;';
+                    refTd.innerHTML = mainVal + '<br><span class="diff-line">' + diffVal + '</span>';
+                    tr.appendChild(refTd);
+                }
+
+                bodyRows.appendChild(tr);
+            });
+        }
+
+        // Show panel immediately; refreshSummary will populate it
+        panel.classList.add('visible');
+        refreshCoopStats();
+        refreshSummary();
+        const observer = new MutationObserver(refreshSummary);
+        observer.observe(sourceTable, { childList: true, subtree: true, characterData: true });
+        const coopObserver = new MutationObserver(refreshCoopStats);
+        coopObserver.observe(coopTable, { childList: true, subtree: true, characterData: true });
+
+        // Also re-check when ref column is added/removed
+        const saveBtn = document.getElementById('saveReference');
+        if (saveBtn) saveBtn.addEventListener('click', () => setTimeout(refreshSummary, 100));
+    })();
+    </script>
+
+    <div id="floatingTip"></div>
+    <script>
+    (function () {
+        const tip = document.getElementById('floatingTip');
+
+        function positionTip(e) {
+            const pad = 12;
+            let x = e.clientX + pad;
+            let y = e.clientY + pad;
+            if (x + 220 > window.innerWidth) x = e.clientX - 220 - pad;
+            if (y + tip.offsetHeight > window.innerHeight) y = e.clientY - tip.offsetHeight - pad;
+            tip.style.left = x + 'px';
+            tip.style.top  = y + 'px';
+        }
+
+        // Use delegation so it works for dynamically generated elements (e.g. mean CS header)
+        document.addEventListener('mouseover', function (e) {
+            const el = e.target.closest('.info-tip--down');
+            if (!el) return;
+            tip.textContent = el.dataset.tip;
+            tip.classList.add('visible');
+            positionTip(e);
+        });
+        document.addEventListener('mousemove', function (e) {
+            if (tip.classList.contains('visible')) positionTip(e);
+        });
+        document.addEventListener('mouseout', function (e) {
+            const el = e.target.closest('.info-tip--down');
+            if (el) tip.classList.remove('visible');
+        });
+    })();
+    </script>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.card-header.collapsible').forEach(function (header) {
+            const title = header.dataset.title;
+            const key = 'card-collapsed:' + title;
+            if (localStorage.getItem(key) === '1') {
+                header.nextElementSibling.classList.add('card-body--collapsed');
+                header.querySelector('.card-chevron').style.transform = 'rotate(180deg)';
+            }
+        });
+        // Remove the temporary FOUC-prevention style now that classes are applied
+        const fouc = document.getElementById('card-collapsed-fouc');
+        if (fouc) fouc.remove();
+    });
+    </script>
+
+</body>
+</html>

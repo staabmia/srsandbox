@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://srsandbox-staabmia.netlify.app/sitemap.xml
