@@ -268,61 +268,45 @@ const artiQualArray = [[0, 0, 0, 0, 0, 0, 0, 0],
 [4, 2, 2, 1, 3, 4, 2, 2]];
 
 
+const deflTierLabels = ["T4L", "T4E", "T4R", "T4C"];
+
+// When compass is swapped for "3 Slot", metro/gusset are the only slots still
+// guaranteed to be legendary; otherwise compass joins them in that group.
+function legendaryGroupLabel(compBetter) {
+    return compBetter ? "T4L Metro/Gusset" : "T4L Metro/Compass/Gusset";
+}
+
+function buildDeflTierScenario(deflIndex) {
+    const deflLabel = deflTierLabels[deflIndex];
+    return {
+        name: `All ${deflLabel} Defl. + Leggies`,
+        apply: (players, deflBetter = false, compBetter = false) => {
+            players.forEach(player => {
+                player.artifacts[0] = deflBetter ? get3SlotItem(1) : itemLists[1][deflIndex];
+                player.artifacts[1] = itemLists[2][0];
+                player.artifacts[2] = compBetter ? get3SlotItem(3) : itemLists[3][0];
+                player.artifacts[3] = itemLists[4][0];
+            });
+            handleArtifactChange(players);
+        },
+        getName: (deflBetter, compBetter) => {
+            if (!deflBetter && !compBetter) return `All ${deflLabel} Defl. + Leggies`;
+            const parts = [deflBetter ? "3 Slot replacing Defl." : `${deflLabel} Defl.`];
+            if (compBetter) parts.push("3 Slot replacing Compass");
+            parts.push(legendaryGroupLabel(compBetter));
+            return parts.join(", ");
+        }
+    };
+}
+
 const scenarios = [
-    {
-        name: "All T4L Defl. + Leggies",
-        apply: (players) => {
-            //numPlayers = parseInt(document.getElementById('numPlayers').value, 10);
-            //document.getElementById('QPlayerInput').value = numPlayers + ' 0';
-            //return;
-            // Set all players to T4L
-            players.forEach(player => {
-                for (let n = 0; n < 4; n++) {
-                    player.artifacts[n] = itemLists[n + 1][0];
-                }
-            });
-            handleArtifactChange(players);
-        }
-    },
-    {
-        name: "All T4E Defl. + Leggies",
-        apply: (players) => {
-            players.forEach(player => {
-                for (let n = 1; n < 4; n++) {
-                    player.artifacts[n] = itemLists[n + 1][0];
-                }
-                player.artifacts[0] = itemLists[1][1];
-            });
-            handleArtifactChange(players);
-        }
-    },
-    {
-        name: "All T4R Defl. + Leggies",
-        apply: (players) => {
-            players.forEach(player => {
-                for (let n = 1; n < 4; n++) {
-                    player.artifacts[n] = itemLists[n + 1][0];
-                }
-                player.artifacts[0] = itemLists[1][2];
-            });
-            handleArtifactChange(players);
-        }
-    },
-    {
-        name: "All T4C Defl. + Leggies",
-        apply: (players) => {
-            players.forEach(player => {
-                for (let n = 1; n < 4; n++) {
-                    player.artifacts[n] = itemLists[n + 1][0];
-                }
-                player.artifacts[0] = itemLists[1][3];
-            });
-            handleArtifactChange(players);
-        }
-    },
+    buildDeflTierScenario(0),
+    buildDeflTierScenario(1),
+    buildDeflTierScenario(2),
+    buildDeflTierScenario(3),
     {
         name: "Mixed Deflectors",
-        apply: (players) => {
+        apply: (players, deflBetter = false, compBetter = false) => {
             const numPlayers = players.length;
             const b = Math.floor(numPlayers / 4);
             players.forEach((player, i) => {
@@ -331,16 +315,24 @@ const scenarios = [
                         i < 2 * b ? 1 :
                             i < 3 * b ? 2 : 3;
 
-                for (let n = 1; n < 4; n++) {
-                    player.artifacts[n] = itemLists[n + 1][0];
-                }
+                player.artifacts[1] = itemLists[2][0];
+                player.artifacts[2] = compBetter ? get3SlotItem(3) : itemLists[3][0];
+                player.artifacts[3] = itemLists[4][0];
 
-                player.artifacts[0] = itemLists[1][group];
+                player.artifacts[0] = deflBetter ? get3SlotItem(1) : itemLists[1][group];
             });
             handleArtifactChange(players);
+        },
+        getName: (deflBetter, compBetter) => {
+            if (!deflBetter && !compBetter) return "Mixed Deflectors";
+            const parts = [deflBetter ? "3 Slot replacing Defl." : "Mixed Defl."];
+            if (compBetter) parts.push("3 Slot replacing Compass");
+            parts.push(legendaryGroupLabel(compBetter));
+            return parts.join(", ");
         }
     }
 ];
+
 
 
 
@@ -3862,40 +3854,35 @@ function runScenarios() {
         });
     });
     */
-    // Run legendary scenario
-    scenarios.forEach((scenario, i) => {
-        if (i < 1) {
-            const players = basePlayers.map((p, i) => {
-                const clone = clonePlayer(p);
-                return clone;
-            });
-            scenario.apply(players);
-            //QPInRun();
-            //players = buildPlayersFromUI(simConfig);
-            const res = RunSimulation(players, simConfig);
-            //const data = collectScenarioResults();
-            results.push({
-                name: scenario.name,
-                ...res
-            });
-        }
+    // Establish the pure T4L-legendary baseline (no 3-slot swaps) for comparison
+    const baselinePlayers = basePlayers.map((p, i) => {
+        const clone = clonePlayer(p);
+        return clone;
     });
-    const baseline = results.find(r => r.name.includes("All T4L Defl."));
+    scenarios[0].apply(baselinePlayers, false, false);
+    const baseline = RunSimulation(baselinePlayers, simConfig);
+
     const playersLeg = basePlayers.map((p, i) => {
         const clone = clonePlayer(p);
         return clone;
     });
-    scenarios[0].apply(playersLeg);
+    scenarios[0].apply(playersLeg, false, false);
 
-    // CheckSIAB
-    const siabTest = testSinglePlayerSIAB(playersLeg, simConfig, baseline);
+    // Edge case checks: does swapping the deflector or compass slot for a
+    // "3 Slot" item (across all players) beat the all-legendary baseline?
+    const deflBetter = test3SlotReplacement(basePlayers, simConfig, baseline, 0, 1, "Deflector") !== null;
+    const compBetter = test3SlotReplacement(basePlayers, simConfig, baseline, 2, 3, "Compass") !== null;
+
+    // CheckSIAB - players without SIAB use 3 Slot in the deflector/compass slot
+    // instead of legendary, if that was shown to beat the baseline above.
+    const siabTest = testSinglePlayerSIAB(playersLeg, simConfig, baseline, deflBetter, compBetter);
 
 
     if (siabTest) {
 
 
         if (basePlayers.length > 3) {
-            const halfResult = runHalfSIAB(basePlayers, simConfig, siabTest.slot);
+            const halfResult = runHalfSIAB(basePlayers, simConfig, siabTest.slot, deflBetter, compBetter);
             let half = Math.ceil(basePlayers.length / 2);
             let nameTmp = siabTest.name;
             nameTmp = nameTmp.replace("1 SIAB", `${half} SIABs`);
@@ -3914,24 +3901,21 @@ function runScenarios() {
     }
 
 
-    // Run non-legendary scenarios
-    scenarios.forEach((scenario, i) => {
-        if (i > 0) {
-            const players = basePlayers.map((p, i) => {
-                const clone = clonePlayer(p);
-                return clone;
-            });
-            scenario.apply(players);
-            // QPInRun();
-            //players = buildPlayersFromUI(simConfig);
-            const res = RunSimulation(players, simConfig);
-            //const data = collectScenarioResults();
-            results.push({
-                name: scenario.name,
-                ...res
-            });
-        }
+    // Run all baseline/legendary-tier scenarios, applying the 3-slot edge case
+    // swaps (and updated names) wherever they were shown to beat the baseline.
+    scenarios.forEach((scenario) => {
+        const players = basePlayers.map((p, i) => {
+            const clone = clonePlayer(p);
+            return clone;
+        });
+        scenario.apply(players, deflBetter, compBetter);
+        const res = RunSimulation(players, simConfig);
+        results.push({
+            name: scenario.getName ? scenario.getName(deflBetter, compBetter) : scenario.name,
+            ...res
+        });
     });
+
     displayScenarioResults(results, siabTest !== null);
 
     //loadDataFromUrl(base64Data);
@@ -3946,23 +3930,55 @@ function applySIAB(player, slot) {
     }
 }
 
-function testSinglePlayerSIAB(basePlayers, simConfig, baseResult) {
+function get3SlotItem(listIndex) {
+    return itemLists[listIndex].find(item => item.name === '3 Slot');
+}
+
+// Sets every player's artifacts to the T4L legendary baseline, except that the
+// deflector and/or compass slots use "3 Slot" instead when that has been shown
+// to beat the baseline (deflBetter / compBetter).
+function setDefaultArtifacts(players, deflBetter, compBetter) {
+    players.forEach(player => {
+        player.artifacts[0] = deflBetter ? get3SlotItem(1) : itemLists[1][0];
+        player.artifacts[1] = itemLists[2][0];
+        player.artifacts[2] = compBetter ? get3SlotItem(3) : itemLists[3][0];
+        player.artifacts[3] = itemLists[4][0];
+    });
+}
+
+// Edge case check: replace a single artifact slot with "3 Slot" for every player
+// (leaving the rest of the set at T4L legendary) and see if it beats the baseline.
+function test3SlotReplacement(basePlayers, simConfig, baseResult, slotIndex, listIndex, label) {
+    const players = basePlayers.map(p => clonePlayer(p));
+    players.forEach(player => {
+        for (let n = 0; n < 4; n++) {
+            player.artifacts[n] = itemLists[n + 1][0];
+        }
+        player.artifacts[slotIndex] = get3SlotItem(listIndex);
+    });
+    handleArtifactChange(players);
+    const res = RunSimulation(players, simConfig);
+
+    if (res.maxCS > baseResult.maxCS) {
+        return { result: res, name: `3 Slot in place of ${label} + Leggies` };
+    }
+    return null;
+}
+
+function testSinglePlayerSIAB(basePlayers, simConfig, baseResult, deflBetter, compBetter) {
 
     let bestResult = null;
     let bestSlot = -1;
 
     for (let slot = 3; slot > 0; slot--) {
 
-        // Duplicate players, and set all to legendary
+        // Duplicate players, and set all to legendary (3 Slot for deflector/compass
+        // if that was shown to beat the baseline, since these players don't have SIAB there)
         const players = basePlayers.map((p, i) => {
             const clone = clonePlayer(p);
             return clone;
         });
-        players.forEach(player => {
-            for (let n = 0; n < 4; n++) {
-                player.artifacts[n] = itemLists[n + 1][0];
-            }
-        });
+        setDefaultArtifacts(players, deflBetter, compBetter);
 
         applySIAB(players[0], slot);
         handleArtifactChange(players);
@@ -3984,20 +4000,24 @@ function testSinglePlayerSIAB(basePlayers, simConfig, baseResult) {
 
     if (bestResult && bestResult.maxCS > baseResult.maxCS) {
         let resName = "1 SIAB in place of " + artifactNames[bestSlot] + " + Leggies";
+
+        const restSwaps = [];
+        if (deflBetter) restSwaps.push("Deflector");
+        if (compBetter) restSwaps.push("Compass");
+        if (restSwaps.length > 0) {
+            resName += ", Rest 3 Slot in place of " + restSwaps.join("/");
+        }
+
         return { result: bestResult, slot: bestSlot, name: resName };
     }
 
     return null;
 }
 
-function runHalfSIAB(basePlayers, simConfig, slot) {
+function runHalfSIAB(basePlayers, simConfig, slot, deflBetter, compBetter) {
 
     const players = basePlayers.map(p => clonePlayer(p));
-    players.forEach(player => {
-        for (let n = 0; n < 4; n++) {
-            player.artifacts[n] = itemLists[n + 1][0];
-        }
-    });
+    setDefaultArtifacts(players, deflBetter, compBetter);
     const half = Math.ceil(players.length / 2);
 
     for (let i = 0; i < half; i++) {
