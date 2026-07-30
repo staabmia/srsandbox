@@ -623,7 +623,7 @@ function generatePlayers(artiArray) {
         Currently, this only works on fast PCs and crashes on phones. 
         `;
 
-    strinfo = '<b><u>Valid for cxp-v0.2.0</u></b>' + "<br />" + 'Current Colleggtibles Assumed (If Checked): +5% Shipping, +5% Shipping, +5% IHR, +5% Layrate, +5% Hab Capacity' + "<br />"
+    strinfo = '<b><u>Valid for cxp-v0.2.0</u></b>' + "<br />" + 'Current Colleggtibles Assumed (If Checked): +5% Shipping, +5% Shipping, +5% IHR, +5% Layrate, +5% Layrate, +5% Hab Capacity' + "<br />"
         + '<b><u>Assumptions:</u></b> 50x tach. boost assumed prior to boost. coopSize = maxCoopSize. All players present for token farming, '
         + 'all players check in immediately when finished boosting and update artis, and check in right at completion. Offline IHR, and token farming always assumed; shiny deflectors are equipped with life stones during boosting, and quant / tach after boosting '
         + '(these will overshoot CS predictions a bit).  ' + "<br />" + '<b><u>Boosting Assumptions(no mirror): </u></b>' + "<br />" + ' < 2 token or > 12 tokens = 50x tach, '
@@ -1044,6 +1044,31 @@ function buildPlayersFromUI(simConfig) {
 
 // Main simulation
 function Run() {
+    // ===== GATOREGG-NOTICE-TEMP: START (added 2026-07-30, remove after ~2026-08-13) =====
+    // One-time migration nudge: the Colleggtibles checkbox already bundles both lay-rate
+    // colleggtibles (Silicon + Gatoregg). Warn users who may still be manually simulating
+    // that +5% via the Modifier field. Auto-hides after 5s so it doesn't linger.
+    (function () {
+        const gatoreggNotice = document.getElementById('gatoreggNotice');
+        if (!gatoreggNotice) return;
+        const modIdx = document.getElementById('mod-name').selectedIndex; // 3 = "LayRate"
+        const modVal = parseFloat(document.getElementById('modifiers').value);
+        const shouldShow = (modIdx === 3 && Math.abs(modVal - 1.05) < 0.0001);
+        if (shouldShow) {
+            if (gatoreggNotice.hidden) {
+                gatoreggNotice.hidden = false;
+            }
+            clearTimeout(window.__gatoreggNoticeTimer);
+            window.__gatoreggNoticeTimer = setTimeout(() => {
+                gatoreggNotice.hidden = true;
+            }, 9000);
+        } else {
+            gatoreggNotice.hidden = true;
+            clearTimeout(window.__gatoreggNoticeTimer);
+        }
+    })();
+    // ===== GATOREGG-NOTICE-TEMP: END =====
+
     const simConfig = buildSimConfigFromUI();
     const players = buildPlayersFromUI(simConfig);
 
@@ -1590,7 +1615,7 @@ function getCollegtibleShip(playerIndex) {
 }
 
 function getCollegtibleELR(playerIndex) {
-    return document.getElementById(`Shipping-colleggtible${playerIndex}`).checked ? 1.05 : 1;
+    return document.getElementById(`Shipping-colleggtible${playerIndex}`).checked ? 1.1025 : 1;
     //return mult;
 }
 

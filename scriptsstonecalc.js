@@ -163,7 +163,7 @@ function loadDataFromUrl(dataOverride = null) {
     if (base64Data) {
         ver = base64Data.slice(0, 3);
         // Check version
-        if (ver === 'v-1' || ver === 'v-2' || ver === 'v-3' || ver === 'v-4' || ver === 'v-5' || ver === 'v-6') {
+        if (ver === 'v-1' || ver === 'v-2' || ver === 'v-3' || ver === 'v-4' || ver === 'v-5' || ver === 'v-6' || ver === 'v-7') {
             
             createInterface();
             // remove version from data
@@ -173,21 +173,28 @@ function loadDataFromUrl(dataOverride = null) {
             // Set v2flag. v1 did not have dark mode preference saved. Eventually v1 support will be removed
             v2flag = true;
             ELRCollegg = false;
+            ELRCollegg2 = false;
             HabCollegg = false;
             if (ver === 'v-1') {
                 v2flag = false;
                 populateData(base64ToData(splitData[0]), splitData[1], v2flag); // pop data for v-1 and v-2, will likely remove in future
             } 
             if (ver === 'v-3' || ver === 'v-4')
-                populateData2(splitData[0], splitData[1], v2flag, ELRCollegg, HabCollegg);
+                populateData2(splitData[0], splitData[1], v2flag, ELRCollegg, ELRCollegg2, HabCollegg);
             if (ver === 'v-5') {
                 ELRCollegg = true;
-                populateData2(splitData[0], splitData[1], v2flag, ELRCollegg, HabCollegg); 
+                populateData2(splitData[0], splitData[1], v2flag, ELRCollegg, ELRCollegg2, HabCollegg); 
             }
             if (ver === 'v-6') {
                 ELRCollegg = true;
                 HabCollegg = true;
-                populateData2(splitData[0], splitData[1], v2flag, ELRCollegg, HabCollegg); // Latest version to use
+                populateData2(splitData[0], splitData[1], v2flag, ELRCollegg, ELRCollegg2, HabCollegg);
+            }
+            if (ver === 'v-7') {
+                ELRCollegg2 = true;
+                ELRCollegg = true;
+                HabCollegg = true;
+                populateData2(splitData[0], splitData[1], v2flag, ELRCollegg, ELRCollegg2, HabCollegg); // Latest version to use
             }
                 
         } else if (ver === 'V-0' || ver === 'V-1') {
@@ -225,6 +232,7 @@ function createInterface() {
     const shipCollegg = document.getElementById('ShipColleggtibles');
     const shipCollegg2 = document.getElementById('ShipColleggtibles2');
     const ELRCollegg = document.getElementById('ELRColleggtibles');
+    const ELRCollegg2 = document.getElementById('ELRColleggtibles2');
     const HabCollegg = document.getElementById('HabColleggtibles');
     const mod = document.getElementById('Modifiers');
     const modMult = document.getElementById('ModifierMultiplier');
@@ -295,6 +303,7 @@ function createInterface() {
     shipCollegg.onchange = () => Run();
     shipCollegg2.onchange = () => Run();
     ELRCollegg.onchange = () => Run();
+    ELRCollegg2.onchange = () => Run();
     HabCollegg.onchange = () => Run();
     mod.onchange = () => Run();
     modMult.onchange = () => Run();
@@ -320,6 +329,7 @@ function populateDropdowns(farmVal) {
     document.getElementById('ELRlabelid').hidden = farmVal;
     document.getElementById('SiliconID').hidden = farmVal;
     document.getElementById('ELRColleggtibles').hidden = farmVal;
+    document.getElementById('ELRColleggtibles2').hidden = farmVal;
     document.getElementById('HabColleggtibles').hidden = farmVal;
     document.getElementById('PeggID').hidden = farmVal;
     document.getElementById('Hablabelid').hidden = farmVal;
@@ -572,6 +582,31 @@ function Run(ftvStr) {
     assComments.innerHTML = 'Max Common Research, Max Epic Research, Max Hyperloop, Full Habs (unless shipping limited), and enough T4 ' + tachImage_txt + '&' + quantImage_txt + ' to reach optimal rate. <br>';
     assComments.innerHTML += 'If you don\'t have enough T4 Stones available, you can use ' + '<a href=https://ei-coop-assistant.netlify.app/laying-set>Kaylier\'s website</a> that can use your EI# to lookup and optimize lower tier stones you have available';
 
+    // ===== GATOREGG-NOTICE-TEMP: START (added 2026-07-30, remove after ~2026-08-13) =====
+    // One-time migration nudge: warn users still using the Modifier field to manually
+    // simulate the +5% lay rate bonus that Gatoregg now provides via its own dropdown.
+    // Auto-hides after 5s so it doesn't linger and become annoying.
+    (function () {
+        const gatoreggNotice = document.getElementById('gatoreggNotice');
+        if (!gatoreggNotice) return;
+        const modIdx = document.getElementById('Modifiers').selectedIndex; // 1 = "Lay Rate"
+        const modVal = parseFloat(document.getElementById('ModifierMultiplier').value);
+        const shouldShow = (modIdx === 1 && Math.abs(modVal - 1.05) < 0.0001);
+        if (shouldShow) {
+            if (gatoreggNotice.hidden) {
+                gatoreggNotice.hidden = false;
+            }
+            clearTimeout(window.__gatoreggNoticeTimer);
+            window.__gatoreggNoticeTimer = setTimeout(() => {
+                gatoreggNotice.hidden = true;
+            }, 9000);
+        } else {
+            gatoreggNotice.hidden = true;
+            clearTimeout(window.__gatoreggNoticeTimer);
+        }
+    })();
+    // ===== GATOREGG-NOTICE-TEMP: END =====
+
     // Update Results table
     const table = document.getElementById('resultsTable');  // get table element
     const rows = table.getElementsByTagName('tr');          // get row element
@@ -628,7 +663,7 @@ function Run(ftvStr) {
 
     // Update URL with user selected data. base64Data is actually a combination of base64Data and base62Data, separated by "=" in the URL. More details inside
     const base64Data = gatherData();
-    updateUrlWithBase64('v-6' + base64Data);
+    updateUrlWithBase64('v-7' + base64Data);
 
 
     // get gusset and metro images
@@ -794,7 +829,7 @@ function displayOtherCoopConfig(elrRaw, sr, totDeflectorPercent, tachIm, quantIm
     });
     
     const base64Data = gatherData([0,0,0,0,totDeflectorPercent]);
-    const url = `${window.location.origin}${window.location.pathname}?data=${'v-6' + base64Data}`;
+    const url = `${window.location.origin}${window.location.pathname}?data=${'v-7' + base64Data}`;
     lines.push('Assuming all colleggtibles. Based on T4L metro / compass / gusset and total coop deflector boost of ' + totDeflectorPercent + `%`);
 
     // ---- DISPLAY ----
@@ -1150,12 +1185,16 @@ function getColleggtibleShip() {
 
 function getColleggtibleELR() {
     ELRColleggtibleIdx1 = document.getElementById('ELRColleggtibles').selectedIndex;
+    ELRColleggtibleIdx2 = document.getElementById('ELRColleggtibles2').selectedIndex;
     if (ELRColleggtibleIdx1 > 0) {
         ELRColleggtibleIdx1++; //Fixes the removal of 4%
     }
+    if (ELRColleggtibleIdx2 > 0) {
+        ELRColleggtibleIdx2++; //Fixes the removal of 4%
+    }
     x = (1 + (5 - ELRColleggtibleIdx1) / 100);
-    allELRCollegg = (ELRColleggtibleIdx1 == 0);
-    return [(1 + (5 - ELRColleggtibleIdx1) / 100),allELRCollegg];
+    allELRCollegg = (ELRColleggtibleIdx1 == 0 && ELRColleggtibleIdx2 == 0);
+    return [((1 + (5 - ELRColleggtibleIdx1) / 100) * (1 + (5 - ELRColleggtibleIdx2) / 100)),allELRCollegg];
 }
 
 function getColleggtibleHab() {
@@ -1220,12 +1259,12 @@ function gatherData(overRideArtis = null) {
     // Grab dark mode preference and add it to array
     indexArrayStr.push(convertBool(document.getElementById('modeToggle').checked));
     // Grab index of selected items and add it to array
-    itemsToSweep = ['Metro', 'Comp', 'Gusset', 'Defl', 'ShipColleggtibles', 'ShipColleggtibles2', 'ELRColleggtibles', 'HabColleggtibles', 'Modifiers', 'DeflectorSelect'];
+    itemsToSweep = ['Metro', 'Comp', 'Gusset', 'Defl', 'ShipColleggtibles', 'ShipColleggtibles2', 'ELRColleggtibles', 'ELRColleggtibles2', 'HabColleggtibles', 'Modifiers', 'DeflectorSelect'];
     if (overRideArtis != null) {
         for (let i = 0; i < 4; i++) {
             indexArrayStr.push(overRideArtis[i]< 10 ? '0' + overRideArtis[i] : overRideArtis[i]);
         }
-        itemsToSweep = ['ShipColleggtibles', 'ShipColleggtibles2', 'ELRColleggtibles', 'HabColleggtibles', 'Modifiers'];
+        itemsToSweep = ['ShipColleggtibles', 'ShipColleggtibles2', 'ELRColleggtibles', 'ELRColleggtibles2', 'HabColleggtibles', 'Modifiers'];
     }
     itemsToSweep.forEach(item => {
         index = document.getElementById(item).selectedIndex;
@@ -1383,7 +1422,7 @@ function populateData(data, data2, v2flag) {
 }
 
 // This function does the opposite of gatherData(), and updates the webpage based on the decoded URL data
-function populateData2(data, data2, v2flag, ELRCollegg, HabCollegg) {
+function populateData2(data, data2, v2flag, ELRCollegg, ELRCollegg2, HabCollegg) {
     // decode base64 data
     data = base64ToData(data);
     // decode base62 indices
@@ -1401,6 +1440,9 @@ function populateData2(data, data2, v2flag, ELRCollegg, HabCollegg) {
         itemsToSweep = ['Metro', 'Comp', 'Gusset', 'Defl', 'ShipColleggtibles', 'ShipColleggtibles2', 'ELRColleggtibles', 'Modifiers', 'DeflectorSelect'];
         if (HabCollegg == true) {
             itemsToSweep = ['Metro', 'Comp', 'Gusset', 'Defl', 'ShipColleggtibles', 'ShipColleggtibles2', 'ELRColleggtibles', 'HabColleggtibles', 'Modifiers', 'DeflectorSelect'];
+        }
+        if (ELRCollegg2 == true) {
+            itemsToSweep = ['Metro', 'Comp', 'Gusset', 'Defl', 'ShipColleggtibles', 'ShipColleggtibles2', 'ELRColleggtibles', 'ELRColleggtibles2', 'HabColleggtibles', 'Modifiers', 'DeflectorSelect'];
         }
     } else {
         itemsToSweep = ['Metro', 'Comp', 'Gusset', 'Defl', 'ShipColleggtibles', 'ShipColleggtibles2', 'Modifiers', 'DeflectorSelect'];

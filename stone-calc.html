@@ -40,7 +40,7 @@
     </nav>
 
     <div class="notice-bar">
-        Looking for the old stable version? It's available at <a id="oldSiteLink" href="https://srsandbox-old.netlify.app/stone-calc" target="_blank" rel="noopener">srsandbox-old.netlify.app/stone-calc</a>
+        Now Includes Gatoregg Colleggtible</a>
     </div>
 
     <div class="page-wrapper">
@@ -123,15 +123,27 @@
                         </div>
                         <div class="collegg-group">
                             <label class="field-label-center" id="ELRlabelid">Lay Rate</label>
-                            <div class="collegg-item">
-                                <img src="https://eggincassets.pages.dev/64/egginc/egg_silicon.png" width="40" height="40" alt="Silicon" title="Silicon" id="SiliconID">
-                                <select id="ELRColleggtibles">
-                                    <option value="">5%</option>
-                                    <option value="">3%</option>
-                                    <option value="">2%</option>
-                                    <option value="">1%</option>
-                                    <option value="">0%</option>
-                                </select>
+                            <div class="collegg-row">
+                                <div class="collegg-item">
+                                    <img src="https://eggincassets.pages.dev/64/egginc/egg_silicon.png" width="40" height="40" alt="Silicon" title="Silicon" id="SiliconID">
+                                    <select id="ELRColleggtibles">
+                                        <option value="">5%</option>
+                                        <option value="">3%</option>
+                                        <option value="">2%</option>
+                                        <option value="">1%</option>
+                                        <option value="">0%</option>
+                                    </select>
+                                </div>
+                                <div class="collegg-item">
+                                    <img src="https://eggincassets.pages.dev/64/egginc/egg_gatoregg.png" width="40" height="40" alt="Gatoregg" title="Gatoregg" id="GatoreggID">
+                                    <select id="ELRColleggtibles2">
+                                        <option value="">5%</option>
+                                        <option value="">3%</option>
+                                        <option value="">2%</option>
+                                        <option value="">1%</option>
+                                        <option value="">0%</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                         <div class="collegg-group">
@@ -174,6 +186,11 @@
                             </span>
                         </div>
                         <span class="param-hint">e.g. +5% → 1.05</span>
+                        <!-- ===== GATOREGG-NOTICE-TEMP: START (added 2026-07-30, remove after ~2026-08-13) ===== -->
+                        <span id="gatoreggNotice" class="gatoregg-popup" hidden>
+                            <strong>Gatoregg is live!</strong> This looks like the manual +5% Lay Rate workaround. Select Gatoregg from the Lay Rate colleggtible dropdown above instead, then set this field back to 1.
+                        </span>
+                        <!-- ===== GATOREGG-NOTICE-TEMP: END ===== -->
                     </div>
 
                     <div class="param-group" id="DeflID">

@@ -485,7 +485,7 @@ option { background: var(--option-bg); color: var(--select-text); }
 }
 .collegg-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
 }
 .collegg-group {
@@ -493,7 +493,9 @@ option { background: var(--option-bg); color: var(--select-text); }
     flex-direction: column;
     align-items: center;
     gap: 8px;
-    padding: 8px 4px;
+    padding: 8px 6px;
+    min-width: 0;
+    width: 100%;
 }
 .collegg-group .field-label-center {
     text-align: center;
@@ -504,23 +506,26 @@ option { background: var(--option-bg); color: var(--select-text); }
     text-transform: uppercase;
     letter-spacing: 0.08em;
     margin-bottom: 0;
-    width: auto;
-    white-space: nowrap;
+    width: 100%;
+    white-space: normal;
+    overflow-wrap: break-word;
 }
-.collegg-row { display: flex; gap: 10px; justify-content: center; }
+.collegg-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; width: 100%; }
 .collegg-item {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 5px;
+    min-width: 0;
 }
 .collegg-item img {
     border-radius: var(--radius-sm);
     background: var(--surface2);
     padding: 2px;
     border: 1px solid var(--border);
+    flex-shrink: 0;
 }
-.collegg-item select { width: 68px; text-align: center; padding: 4px 18px 4px 4px; font-size: 12px; }
+.collegg-item select { width: 64px; max-width: 100%; text-align: center; padding: 4px 16px 4px 4px; font-size: 12px; }
 
 /* ── Stones Grid ──────────────────────────────── */
 .stones-grid {
@@ -952,6 +957,30 @@ tr:hover td { background: var(--surface2); }
 }
 
 
+
+/* ===== GATOREGG-NOTICE-TEMP: START (added 2026-07-30, remove after ~2026-08-13) ===== */
+.gatoregg-popup {
+    display: block;
+    width: 100%;
+    max-width: 280px;
+    margin: 4px auto 0;
+    background: var(--surface3);
+    border: 1px solid var(--amber);
+    color: var(--text-primary);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.5;
+    text-transform: none;
+    letter-spacing: normal;
+    text-align: center;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow);
+}
+.gatoregg-popup strong { color: var(--amber); }
+.gatoregg-popup[hidden] { display: none !important; }
+/* ===== GATOREGG-NOTICE-TEMP: END ===== */
 
 /* ── Legacy class compat (referenced by JS) ───── */
 .row { display: flex; margin-bottom: 4px; }

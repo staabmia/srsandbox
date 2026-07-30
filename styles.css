@@ -683,6 +683,29 @@ option {
     line-height: 1.4;
 }
 
+/* ===== GATOREGG-NOTICE-TEMP: START (added 2026-07-30, remove after ~2026-08-13) ===== */
+.gatoregg-popup {
+    display: block;
+    flex: 1 1 100%;
+    width: 100%;
+    max-width: 320px;
+    margin-top: 2px;
+    background: var(--surface3);
+    border: 1px solid var(--amber);
+    color: var(--text-primary);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.5;
+    text-align: left;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow);
+}
+.gatoregg-popup strong { color: var(--amber); }
+.gatoregg-popup[hidden] { display: none !important; }
+/* ===== GATOREGG-NOTICE-TEMP: END ===== */
+
 /* ── Buttons — all consistent ghost style ─────── */
 button {
     display: inline-flex;
