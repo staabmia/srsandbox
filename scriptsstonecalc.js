@@ -818,6 +818,8 @@ function displayOtherCoopConfig(elrRaw, sr, totDeflectorPercent, tachIm, quantIm
     // equipped, so the gusset is always T4L here - same maxPop applies to every scenario below.
     const [mhCoop] = getColleggtibleHab();
     const maxPop = 11340000000 * gussetMultiplier * getHabModifier() * mhCoop;
+    // Round hab space DOWN to the nearest 0.1b, so it's never overstated
+    const habRounded = Math.floor(maxPop / 1e8) / 10;
     let anyPop = false;
 
     scenarios.forEach(scene => {
@@ -834,11 +836,11 @@ function displayOtherCoopConfig(elrRaw, sr, totDeflectorPercent, tachIm, quantIm
         // setups (elr > sr) cap out below full habs - otherwise max pop is required, so show nothing.
         let popStr = '';
         if (e1 > s1) {
-            // Round UP to the nearest 0.1b so the number is never short of what's actually needed
+            // Round required chickens UP to the nearest 0.1b, so it's never understated
             const popRounded = Math.ceil(maxPop * s1 / e1 / 1e8) / 10;
-            // Skip anything that rounds all the way up to full habs - showing a number >= max pop
-            // would just be misleading, and full habs is the default assumption anyway
-            if (popRounded * 1e9 < maxPop) {
+            // Compare the two rounded figures. Anything that lands on (or above) rounded hab space
+            // is effectively full habs, so show nothing rather than a number that reads like max.
+            if (popRounded < habRounded) {
                 anyPop = true;
                 popStr = '   ' + (popRounded.toFixed(1) + 'b').padStart(6) + ' pop';
             }
