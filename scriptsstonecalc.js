@@ -814,6 +814,12 @@ function displayOtherCoopConfig(elrRaw, sr, totDeflectorPercent, tachIm, quantIm
         { name: 'T3R Deflector', stoneSlots: 9, def: totDeflectorPercent - 13 }
     ];
 
+    // Max population (full habs) for these configs. This function only runs when all leggies are
+    // equipped, so the gusset is always T4L here - same maxPop applies to every scenario below.
+    const [mhCoop] = getColleggtibleHab();
+    const maxPop = 11340000000 * gussetMultiplier * getHabModifier() * mhCoop;
+    let anyPop = false;
+
     scenarios.forEach(scene => {
         const [e1, s1, numTach, numQuant] =
             optStones(elrRaw * (1 + scene.def / 100), sr, scene.stoneSlots);
@@ -823,14 +829,30 @@ function displayOtherCoopConfig(elrRaw, sr, totDeflectorPercent, tachIm, quantIm
             spt = ' ';
         if (numQuant < 10)
             spq = ' ';
+
+        // Population needed to hit the max delivery rate for this config. Only shipping-limited
+        // setups (elr > sr) cap out below full habs - otherwise max pop is required, so show nothing.
+        let popStr = '';
+        if (e1 > s1) {
+            // Round UP to the nearest 0.1b so the number is never short of what's actually needed
+            const popRounded = Math.ceil(maxPop * s1 / e1 / 1e8) / 10;
+            // Skip anything that rounds all the way up to full habs - showing a number >= max pop
+            // would just be misleading, and full habs is the default assumption anyway
+            if (popRounded * 1e9 < maxPop) {
+                anyPop = true;
+                popStr = '   ' + (popRounded.toFixed(1) + 'b').padStart(6) + ' pop';
+            }
+        }
         lines.push(
-            `${scene.name}:   ` + spt + `${numTach} ${tachIm} ` + spq + `${numQuant} ${quantIm}   ${(Math.round(Math.min(e1, s1) / 1e12) / 1e3).toFixed(3) } q/hr`
+            `${scene.name}:   ` + spt + `${numTach} ${tachIm} ` + spq + `${numQuant} ${quantIm}   ${(Math.round(Math.min(e1, s1) / 1e12) / 1e3).toFixed(3).padStart(6) } q/hr` + popStr
         );
     });
     
     const base64Data = gatherData([0,0,0,0,totDeflectorPercent]);
     const url = `${window.location.origin}${window.location.pathname}?data=${'v-7' + base64Data}`;
     lines.push('Assuming all colleggtibles. Based on T4L metro / compass / gusset and total coop deflector boost of ' + totDeflectorPercent + `%`);
+    if (anyPop)
+        lines.push('Pop = minimum chickens needed to hit that rate. No pop listed = full habs required.');
 
     // ---- DISPLAY ----
     const container = document.getElementById('coopOutput');
