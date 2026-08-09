@@ -257,6 +257,14 @@
                             <small id="errorMsg" style="color:#ff6b6b;display:none;">⚠ Max 5 numbers allowed.</small>
                         </div>
                     </div>
+
+                    <div class="field-row field-row--stack">
+                        <label for="QSetTEInput" class="field-label">Quick TE Input</label>
+                        <div class="qinput-block">
+                            <input type="number" id="QSetTEInput" min="0" max="490" placeholder="e.g. 150" class="qinput-field" onkeyup="enforceMinMax(this)">
+                            <p class="hint-text">Sets every player's TE to this value, overwriting any TE already set.</p>
+                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -275,6 +283,7 @@
                     this.value = clean;
                 });
                 input.onchange = () => QPInRun();
+                document.getElementById("QSetTEInput").onchange = () => QSetTERun();
             </script>
 
             <!-- Dynamic Output Areas -->

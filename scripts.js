@@ -3798,6 +3798,16 @@ function QPInRun() {
     generatePlayers(artiArray);
 }
 
+function QSetTERun() {
+    const te = document.getElementById("QSetTEInput").value;
+    if (te === '') return;
+    for (let i = 0; i < numPlayers; i++) {
+        const teEl = document.getElementById(`playerTE${i}`);
+        if (teEl) teEl.value = te;
+    }
+    Run();
+}
+
 function enforceMinMax(el) {
     if (el.value != "") {
         if (parseInt(el.value) < parseInt(el.min)) {
