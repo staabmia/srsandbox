@@ -2312,7 +2312,9 @@ function getCS(contributionRatio, originalLength, completionTime, tw) {
     cs *= fac;
     cs *= 4 * Math.pow((1 - completionTime / originalLength), 3) + 1;
     cs *= (0.19 * tw + 1);
-    cs *= 1.05; // Kev Fudge Factor
+    if (document.getElementById('cxpToggle').checked) {
+        cs *= 1.05; // Kev Fudge Factor
+    }
     cs = Math.ceil(cs * 187.5);
     return cs;
 }
