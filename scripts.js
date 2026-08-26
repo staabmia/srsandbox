@@ -149,7 +149,8 @@ const itemsMetro = [
     { name: 'T1C Metro', image: 'images/Metro1C.png', slots: 0, elrmult: 1.05, srmult: 1, ihrmult: 1, deflectorPercent: 0, siabPercent: 0, chickmult: 1 },
     { name: 'T4L SIAB', image: 'images/SIAB4L.png', slots: 2, elrmult: 1, srmult: 1, ihrmult: 1, deflectorPercent: 0, siabPercent: 100, chickmult: 1 },
     { name: 'T4E SIAB', image: 'images/SIAB4E.png', slots: 2, elrmult: 1, srmult: 1, ihrmult: 1, deflectorPercent: 0, siabPercent: 90, chickmult: 1 },
-    { name: 'T4R SIAB', image: 'images/SIAB4R.png', slots: 1, elrmult: 1, srmult: 1, ihrmult: 1, deflectorPercent: 0, siabPercent: 80, chickmult: 1 }
+    { name: 'T4R SIAB', image: 'images/SIAB4R.png', slots: 1, elrmult: 1, srmult: 1, ihrmult: 1, deflectorPercent: 0, siabPercent: 80, chickmult: 1 },
+    { name: 'Empty', image: 'https://staabass.netlify.app/images/C.gif', bgGif: 'https://staabass.netlify.app/images/C.gif', slots: 0, elrmult: 1, srmult: 1, ihrmult: 1, deflectorPercent: 0, siabPercent: 0, chickmult: 1 }
 ];
 
 const itemsComp = [
@@ -164,7 +165,8 @@ const itemsComp = [
     { name: '3 Slot', image: 'images/RandomLeg.png', slots: 3, elrmult: 1, srmult: 1, ihrmult: 1, deflectorPercent: 0, siabPercent: 0, chickmult: 1 },
     { name: 'T4L SIAB', image: 'images/SIAB4L.png', slots: 2, elrmult: 1, srmult: 1, ihrmult: 1, deflectorPercent: 0, siabPercent: 100, chickmult: 1 },
     { name: 'T4E SIAB', image: 'images/SIAB4E.png', slots: 2, elrmult: 1, srmult: 1, ihrmult: 1, deflectorPercent: 0, siabPercent: 90, chickmult: 1 },
-    { name: 'T4R SIAB', image: 'images/SIAB4R.png', slots: 1, elrmult: 1, srmult: 1, ihrmult: 1, deflectorPercent: 0, siabPercent: 80, chickmult: 1 }
+    { name: 'T4R SIAB', image: 'images/SIAB4R.png', slots: 1, elrmult: 1, srmult: 1, ihrmult: 1, deflectorPercent: 0, siabPercent: 80, chickmult: 1 },
+    { name: 'Empty', image: 'https://staabass.netlify.app/images/C.gif', bgGif: 'https://staabass.netlify.app/images/C.gif', slots: 0, elrmult: 1, srmult: 1, ihrmult: 1, deflectorPercent: 0, siabPercent: 0, chickmult: 1 }
 ];
 
 const itemsGusset = [
@@ -179,7 +181,8 @@ const itemsGusset = [
     { name: 'T1C Gusset', image: 'images/Gusset1C.png', slots: 0, elrmult: 1, srmult: 1, ihrmult: 1, deflectorPercent: 0, siabPercent: 0, chickmult: 1.05 },
     { name: 'T4L SIAB', image: 'images/SIAB4L.png', slots: 2, elrmult: 1, srmult: 1, ihrmult: 1, deflectorPercent: 0, siabPercent: 100, chickmult: 1 },
     { name: 'T4E SIAB', image: 'images/SIAB4E.png', slots: 2, elrmult: 1, srmult: 1, ihrmult: 1, deflectorPercent: 0, siabPercent: 90, chickmult: 1 },
-    { name: 'T4R SIAB', image: 'images/SIAB4R.png', slots: 1, elrmult: 1, srmult: 1, ihrmult: 1, deflectorPercent: 0, siabPercent: 80, chickmult: 1 }
+    { name: 'T4R SIAB', image: 'images/SIAB4R.png', slots: 1, elrmult: 1, srmult: 1, ihrmult: 1, deflectorPercent: 0, siabPercent: 80, chickmult: 1 },
+    { name: 'Empty', image: 'https://staabass.netlify.app/images/C.gif', bgGif: 'https://staabass.netlify.app/images/C.gif', slots: 0, elrmult: 1, srmult: 1, ihrmult: 1, deflectorPercent: 0, siabPercent: 0, chickmult: 1 }
 ];
 
 const itemsDefl = [
@@ -191,7 +194,8 @@ const itemsDefl = [
     { name: 'T3C Defl.', image: 'images/Deflector3C.png', slots: 0, elrmult: 1, srmult: 1, ihrmult: 1, deflectorPercent: 12, siabPercent: 0, chickmult: 1 },
     { name: 'T2C Defl.', image: 'images/Deflector2C.png', slots: 0, elrmult: 1, srmult: 1, ihrmult: 1, deflectorPercent: 8, siabPercent: 0, chickmult: 1 },
     { name: 'T1C Defl.', image: 'images/Deflector1C.png', slots: 0, elrmult: 1, srmult: 1, ihrmult: 1, deflectorPercent: 5, siabPercent: 0, chickmult: 1 },
-    { name: '3 Slot', image: 'images/RandomLeg.png', slots: 3, elrmult: 1, srmult: 1, ihrmult: 1, deflectorPercent: 0, siabPercent: 0, chickmult: 1 }
+    { name: '3 Slot', image: 'images/RandomLeg.png', slots: 3, elrmult: 1, srmult: 1, ihrmult: 1, deflectorPercent: 0, siabPercent: 0, chickmult: 1 },
+    { name: 'Empty', image: 'https://staabass.netlify.app/images/C.gif', bgGif: 'https://staabass.netlify.app/images/C.gif', slots: 0, elrmult: 1, srmult: 1, ihrmult: 1, deflectorPercent: 0, siabPercent: 0, chickmult: 1 }
 ];
 
 const itemsChal = [
@@ -203,7 +207,8 @@ const itemsChal = [
     { name: 'T3C Chalice', image: 'images/Chalice3C.png', slots: 0, elrmult: 1, srmult: 1, ihrmult: 1.2, deflectorPercent: 0, siabPercent: 0, chickmult: 1 },
     { name: 'T2E Chalice', image: 'images/Chalice2E.png', slots: 2, elrmult: 1, srmult: 1, ihrmult: 1.15, deflectorPercent: 0, siabPercent: 0, chickmult: 1 },
     { name: 'T2C Chalice', image: 'images/Chalice2C.png', slots: 0, elrmult: 1, srmult: 1, ihrmult: 1.1, deflectorPercent: 0, siabPercent: 0, chickmult: 1 },
-    { name: 'T1C Chalice', image: 'images/Chalice1C.png', slots: 0, elrmult: 1, srmult: 1, ihrmult: 1.05, deflectorPercent: 0, siabPercent: 0, chickmult: 1 }
+    { name: 'T1C Chalice', image: 'images/Chalice1C.png', slots: 0, elrmult: 1, srmult: 1, ihrmult: 1.05, deflectorPercent: 0, siabPercent: 0, chickmult: 1 },
+    { name: 'Empty', image: 'https://staabass.netlify.app/images/C.gif', bgGif: 'https://staabass.netlify.app/images/C.gif', slots: 0, elrmult: 1, srmult: 1, ihrmult: 1, deflectorPercent: 0, siabPercent: 0, chickmult: 1 }
 ];
 
 const itemsMonocle = [
@@ -212,7 +217,8 @@ const itemsMonocle = [
     { name: 'T4C Monocle', image: 'images/Monocle4C.png', slots: 0, elrmult: 1, srmult: 1, ihrmult: 1.2, deflectorPercent: 0, siabPercent: 0, chickmult: 1 },
     { name: 'T3C Monocle', image: 'images/Monocle3C.png', slots: 0, elrmult: 1, srmult: 1, ihrmult: 1.15, deflectorPercent: 0, siabPercent: 0, chickmult: 1 },
     { name: 'T2C Monocle', image: 'images/Monocle2C.png', slots: 0, elrmult: 1, srmult: 1, ihrmult: 1.1, deflectorPercent: 0, siabPercent: 0, chickmult: 1 },
-    { name: 'T1C Monocle', image: 'images/Monocle1C.png', slots: 0, elrmult: 1, srmult: 1, ihrmult: 1.05, deflectorPercent: 0, siabPercent: 0, chickmult: 1 }
+    { name: 'T1C Monocle', image: 'images/Monocle1C.png', slots: 0, elrmult: 1, srmult: 1, ihrmult: 1.05, deflectorPercent: 0, siabPercent: 0, chickmult: 1 },
+    { name: 'Empty', image: 'https://staabass.netlify.app/images/C.gif', bgGif: 'https://staabass.netlify.app/images/C.gif', slots: 0, elrmult: 1, srmult: 1, ihrmult: 1, deflectorPercent: 0, siabPercent: 0, chickmult: 1 }
 ];
 
 const itemsIHRDefl = [
@@ -225,7 +231,8 @@ const itemsIHRDefl = [
     { name: 'T2C Defl.', image: 'images/Deflector2C.png', slots: 0, elrmult: 1, srmult: 1, ihrmult: 1, deflectorPercent: 8, siabPercent: 0, chickmult: 1 },
     { name: 'T1C Defl.', image: 'images/Deflector1C.png', slots: 0, elrmult: 1, srmult: 1, ihrmult: 1, deflectorPercent: 5, siabPercent: 0, chickmult: 1 },
     { name: '3 Slot', image: 'images/RandomLeg.png', slots: 3, elrmult: 1, srmult: 1, ihrmult: 1, deflectorPercent: 0, siabPercent: 0, chickmult: 1 },
-    { name: '2 Slot', image: 'images/RandomEpic.png', slots: 2, elrmult: 1, srmult: 1, ihrmult: 1, deflectorPercent: 0, siabPercent: 0, chickmult: 1 }
+    { name: '2 Slot', image: 'images/RandomEpic.png', slots: 2, elrmult: 1, srmult: 1, ihrmult: 1, deflectorPercent: 0, siabPercent: 0, chickmult: 1 },
+    { name: 'Empty', image: 'https://staabass.netlify.app/images/C.gif', bgGif: 'https://staabass.netlify.app/images/C.gif', slots: 0, elrmult: 1, srmult: 1, ihrmult: 1, deflectorPercent: 0, siabPercent: 0, chickmult: 1 }
 ];
 
 const itemsIHRSIAB = [
@@ -236,7 +243,8 @@ const itemsIHRSIAB = [
     { name: 'T3R SIAB', image: 'images/SIAB3R.png', slots: 1, elrmult: 1, srmult: 1, ihrmult: 1, deflectorPercent: 0, siabPercent: 60, chickmult: 1 },
     { name: 'T3C SIAB', image: 'images/SIAB3C.png', slots: 0, elrmult: 1, srmult: 1, ihrmult: 1, deflectorPercent: 0, siabPercent: 50, chickmult: 1 },
     { name: '3 Slot', image: 'images/RandomLeg.png', slots: 3, elrmult: 1, srmult: 1, ihrmult: 1, deflectorPercent: 0, siabPercent: 0, chickmult: 1 },
-    { name: '2 Slot', image: 'images/RandomEpic.png', slots: 2, elrmult: 1, srmult: 1, ihrmult: 1, deflectorPercent: 0, siabPercent: 0, chickmult: 1 }
+    { name: '2 Slot', image: 'images/RandomEpic.png', slots: 2, elrmult: 1, srmult: 1, ihrmult: 1, deflectorPercent: 0, siabPercent: 0, chickmult: 1 },
+    { name: 'Empty', image: 'https://staabass.netlify.app/images/C.gif', bgGif: 'https://staabass.netlify.app/images/C.gif', slots: 0, elrmult: 1, srmult: 1, ihrmult: 1, deflectorPercent: 0, siabPercent: 0, chickmult: 1 }
 ];
 
 const itemLabel1 = [
@@ -343,6 +351,9 @@ let coopNameFromURL = null;
 let coopNameFromBot = false;
 const deflLinked = {}; // tracks whether each player's two defl slots are linked
 const siabLinked = {}; // tracks whether each player's boosted and IHR SIAB slots are linked
+const siabSlotMemo = {}; // remembers which boosted slot (2-4) holds the SIAB, so the
+                         // link survives that slot being set to 'Empty'
+const EMPTY_ITEM = 'Empty';
 
 // Function to generate player inputs
 function generatePlayers(artiArray) {
@@ -3119,6 +3130,10 @@ function populateData2(data, data2, ver) {
                 setColor(element);
             }
 
+            // The link buttons were injected before these values were applied,
+            // so their state has to be recomputed from what actually loaded.
+            refreshLinkStateFromSelections(i);
+
             playerIndex++;
         }
 
@@ -3397,7 +3412,7 @@ function setColor(element) {
         element.style.color = '#333';
         return;
     }
-    if (element.value[2] === 'C' || element.value[2] === 'S') {
+    if (element.value[2] === 'C' || element.value[2] === 'S' || element.value[2] === 'p') {
         element.style.backgroundColor = '#555';
         element.style.color = '#f4f4f4';
         return;
@@ -3415,30 +3430,50 @@ function getBoostedSIABSlot(playerIndex) {
     return null;
 }
 
+// Returns the slot the SIAB link applies to. Normally that is whichever boosted
+// slot currently holds a SIAB, but if that slot has been set to 'Empty' we fall
+// back to the remembered slot so the pair stays linked across an Empty selection.
+function getLinkedSIABSlot(playerIndex) {
+    const live = getBoostedSIABSlot(playerIndex);
+    if (live) {
+        siabSlotMemo[playerIndex] = live;
+        return live;
+    }
+    const memo = siabSlotMemo[playerIndex];
+    if (memo) {
+        const el = document.getElementById(`player${playerIndex}_item${memo}`);
+        if (el && el.value === EMPTY_ITEM) return memo;
+        delete siabSlotMemo[playerIndex];
+    }
+    return null;
+}
+
 function syncSIAB(playerIndex, source) {
     if (!siabLinked[playerIndex]) return;
-    const siabSlot = getBoostedSIABSlot(playerIndex);
+    const siabSlot = getLinkedSIABSlot(playerIndex);
     const ihr = document.getElementById(`player${playerIndex}_item6`);
-    if (!ihr) return;
+    if (!ihr || !siabSlot) return;
+    const boosted = document.getElementById(`player${playerIndex}_item${siabSlot}`);
+    if (!boosted) return;
 
-    if (source === 'boosted' && siabSlot) {
-        const boosted = document.getElementById(`player${playerIndex}_item${siabSlot}`);
-        if (!boosted) return;
-        // Match grade: T4L SIAB → T4L SIAB in IHR list, etc.
-        const grade = boosted.value.split(' ')[0]; // e.g. "T4L"
-        const match = Array.from(ihr.options).findIndex(o => o.value.startsWith(grade));
-        if (match >= 0) { ihr.selectedIndex = match; setColor(ihr); }
-    } else if (source === 'ihr' && siabSlot) {
-        const boosted = document.getElementById(`player${playerIndex}_item${siabSlot}`);
-        if (!boosted) return;
-        const grade = ihr.value.split(' ')[0];
-        const match = Array.from(boosted.options).findIndex(o => o.value.startsWith(grade) && o.value.includes('SIAB'));
-        if (match >= 0) { boosted.selectedIndex = match; setColor(boosted); }
-    }
+    const from = source === 'boosted' ? boosted : ihr;
+    const to = source === 'boosted' ? ihr : boosted;
+
+    // 'Empty' propagates as 'Empty'; anything else matches on grade (T4L → T4L SIAB).
+    const match = from.value === EMPTY_ITEM
+        ? Array.from(to.options).findIndex(o => o.value === EMPTY_ITEM)
+        : Array.from(to.options).findIndex(o => o.value.startsWith(from.value.split(' ')[0]) && o.value.includes('SIAB'));
+
+    // No counterpart in the other list (e.g. a T3C SIAB, or '2 Slot') — leave it alone
+    // rather than dragging the other slot to an unrelated entry.
+    if (match < 0) return;
+    to.selectedIndex = match;
+    setColor(to);
+    if (source === 'ihr') updateSIABLinkVisibility(playerIndex);
 }
 
 function updateSIABLinkVisibility(playerIndex) {
-    const siabSlot = getBoostedSIABSlot(playerIndex);
+    const siabSlot = getLinkedSIABSlot(playerIndex);
     // Hide all SIAB link button wrappers for this player first
     for (let j = 2; j <= 4; j++) {
         const wrap = document.getElementById(`siabLinkWrap${playerIndex}_${j}`);
@@ -3448,8 +3483,59 @@ function updateSIABLinkVisibility(playerIndex) {
         const wrap = document.getElementById(`siabLinkWrap${playerIndex}_${siabSlot}`);
         if (wrap) wrap.style.display = '';
     }
-    // If no SIAB selected, disable syncing
+    // If no SIAB selected (and none remembered), disable syncing
     if (!siabSlot) siabLinked[playerIndex] = false;
+}
+
+// Handles a change to one of the boosted slots (items 2-4): keeps the SIAB link
+// state, the link button and the IHR SIAB slot in step with the new selection.
+function handleBoostedSlotChange(playerIndex, slot, el) {
+    const isSIAB = el.value.includes('SIAB');
+    const isEmpty = el.value === EMPTY_ITEM;
+
+    if (isSIAB) {
+        siabSlotMemo[playerIndex] = slot;
+    } else if (!isEmpty && siabSlotMemo[playerIndex] === slot) {
+        // The SIAB slot was given some other artifact — the link no longer applies.
+        delete siabSlotMemo[playerIndex];
+    }
+
+    // Clearing the SIAB slot to 'Empty' must not silently drop the link: push the
+    // Empty through to the IHR SIAB slot and keep the pair linked, so selecting a
+    // SIAB again later re-syncs both sides.
+    const clearingLinkedSlot = siabLinked[playerIndex] && isEmpty && siabSlotMemo[playerIndex] === slot;
+
+    updateSIABLinkVisibility(playerIndex);
+
+    if (clearingLinkedSlot) {
+        siabLinked[playerIndex] = true;
+        syncSIAB(playerIndex, 'boosted');
+        return;
+    }
+
+    if (!isSIAB) return;
+
+    // Only re-enable link if it hasn't been explicitly unlinked by the user.
+    // siabLinked is false either because: (a) user clicked unlink, or
+    // (b) no SIAB was previously selected (cleared by updateSIABLinkVisibility).
+    // We distinguish by checking if a siabLink button exists and shows 🔓.
+    const anyBtn = document.getElementById(`siabLink${playerIndex}_2`) ||
+        document.getElementById(`siabLink${playerIndex}_3`) ||
+        document.getElementById(`siabLink${playerIndex}_4`);
+    const userUnlinked = anyBtn && anyBtn.textContent === '🔓';
+    if (userUnlinked) return;
+
+    siabLinked[playerIndex] = true;
+    for (let k = 2; k <= 4; k++) {
+        const b = document.getElementById(`siabLink${playerIndex}_${k}`);
+        if (b) {
+            b.textContent = '🔗';
+            b.title = 'SIAB slots linked — click to unlink';
+            b.style.color = 'var(--amber, #f59e0b)';
+            b.style.background = 'rgba(0,0,0,0.35)';
+        }
+    }
+    syncSIAB(playerIndex, 'boosted');
 }
 
 function injectSIABLinkButton(playerIndex) {
@@ -3526,15 +3612,68 @@ function syncDefl(playerIndex, source) {
     const defl5 = document.getElementById(`player${playerIndex}_item5`);
     if (!defl1 || !defl5) return;
 
-    // Match the name from one defl list to the equivalent in the other
-    // Both lists share the same option names so selectedIndex maps directly
-    if (source === 1) {
-        defl5.selectedIndex = defl1.selectedIndex;
-        setColor(defl5);
-    } else {
-        defl1.selectedIndex = defl5.selectedIndex;
-        setColor(defl1);
+    // Match by option name, NOT selectedIndex: the two deflector lists are not
+    // index-aligned. itemsIHRDefl carries an extra '2 Slot' entry, so from '3 Slot'
+    // onward the indices are off by one ('Empty' is 9 in one list and 10 in the other).
+    const from = source === 1 ? defl1 : defl5;
+    const to = source === 1 ? defl5 : defl1;
+
+    const match = Array.from(to.options).findIndex(o => o.value === from.value);
+    // '2 Slot' has no counterpart in the boosted list — leave the other slot as it is
+    // instead of blanking it out or landing on an unrelated entry.
+    if (match < 0) return;
+    to.selectedIndex = match;
+    setColor(to);
+}
+
+// Paints the defl link button for a given state.
+function setDeflLinkButtonState(playerIndex, linked) {
+    const btn = document.getElementById(`deflLink${playerIndex}`);
+    if (!btn) return;
+    btn.textContent = linked ? '🔗' : '🔓';
+    btn.title = linked ? 'Defl. slots linked — click to unlink' : 'Defl. slots unlinked — click to link';
+    btn.style.color = linked ? 'var(--amber, #f59e0b)' : 'var(--text-muted, #888)';
+}
+
+// Paints all of a player's SIAB link buttons for a given state.
+function setSIABLinkButtonState(playerIndex, linked) {
+    for (let k = 2; k <= 4; k++) {
+        const b = document.getElementById(`siabLink${playerIndex}_${k}`);
+        if (!b) continue;
+        b.textContent = linked ? '🔗' : '🔓';
+        b.title = linked ? 'SIAB slots linked — click to unlink' : 'SIAB slots unlinked — click to link';
+        b.style.color = linked ? 'var(--amber, #f59e0b)' : 'var(--text-muted, #888)';
+        b.style.background = 'rgba(0,0,0,0.35)';
     }
+}
+
+// Recomputes link state from what is actually selected. Needed after a URL load:
+// the link buttons are injected by generatePlayers() while the selects still hold
+// defaults, so without this a saved link comes back with stale link state. A saved
+// URL may hold deliberately mismatched slots (a '2 Slot' IHR defl next to a T4L
+// boosted defl, say), and those must not be silently re-linked and then clobbered
+// the first time the user touches a dropdown.
+function refreshLinkStateFromSelections(playerIndex) {
+    const defl1 = document.getElementById(`player${playerIndex}_item1`);
+    const defl5 = document.getElementById(`player${playerIndex}_item5`);
+    if (defl1 && defl5) {
+        deflLinked[playerIndex] = defl1.value === defl5.value;
+        setDeflLinkButtonState(playerIndex, deflLinked[playerIndex]);
+    }
+
+    const siabSlot = getBoostedSIABSlot(playerIndex);
+    const ihr = document.getElementById(`player${playerIndex}_item6`);
+    const boosted = siabSlot ? document.getElementById(`player${playerIndex}_item${siabSlot}`) : null;
+    if (boosted && ihr) {
+        siabSlotMemo[playerIndex] = siabSlot;
+        // Linked only if both sides already agree on grade (e.g. T4E / T4E).
+        siabLinked[playerIndex] = boosted.value.split(' ')[0] === ihr.value.split(' ')[0];
+    } else {
+        delete siabSlotMemo[playerIndex];
+        siabLinked[playerIndex] = false;
+    }
+    setSIABLinkButtonState(playerIndex, siabLinked[playerIndex]);
+    updateSIABLinkVisibility(playerIndex);
 }
 
 function injectDeflLinkButton(playerIndex) {
@@ -3625,33 +3764,8 @@ function onPlayersGenerated() {
                 selectElement.addEventListener('change', function () {
                     setColor(this);
                     if (j === 1) syncDefl(i, 1);
-                    // Any boosted slot change may affect SIAB link visibility
-                    if (j >= 2 && j <= 4) {
-                        updateSIABLinkVisibility(i);
-                        if (this.value.includes('SIAB')) {
-                            // Only re-enable link if it hasn't been explicitly unlinked by the user.
-                            // siabLinked is false either because: (a) user clicked unlink, or
-                            // (b) no SIAB was previously selected (cleared by updateSIABLinkVisibility).
-                            // We distinguish by checking if a siabLink button exists and shows 🔓.
-                            const anyBtn = document.getElementById(`siabLink${i}_2`) ||
-                                document.getElementById(`siabLink${i}_3`) ||
-                                document.getElementById(`siabLink${i}_4`);
-                            const userUnlinked = anyBtn && anyBtn.textContent === '🔓';
-                            if (!userUnlinked) {
-                                siabLinked[i] = true;
-                                for (let k = 2; k <= 4; k++) {
-                                    const b = document.getElementById(`siabLink${i}_${k}`);
-                                    if (b) {
-                                        b.textContent = '🔗';
-                                        b.title = 'SIAB slots linked — click to unlink';
-                                        b.style.color = 'var(--amber, #f59e0b)';
-                                        b.style.background = 'rgba(0,0,0,0.35)';
-                                    }
-                                }
-                                syncSIAB(i, 'boosted');
-                            }
-                        }
-                    }
+                    // Any boosted slot change may affect SIAB link state/visibility
+                    if (j >= 2 && j <= 4) handleBoostedSlotChange(i, j, this);
                     Run();
                 });
             }
