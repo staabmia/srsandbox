@@ -17,7 +17,11 @@ const defaultStats = {
     btvRat: 0,
     tw: 0,
     CS: 0,
-    TE: 0
+    TE: 0,
+    spSwapBTV: 0,      // BTV credited for the assumed SP pre-boost set
+    spSwapWindow: 0,   // length of the window that credit covers, seconds
+    spCreditDefl: 0,   // deflector % credited pre-boost (0 = already equipped)
+    spCreditSiab: 0    // SIAB % credited pre-boost (0 = already equipped)
 };
 const defaultRates = {
     ihr: 0,
@@ -33,7 +37,8 @@ const defaultFlags = {
     isCreator: false,
     maxHab: false,
     siabActive: false,
-    collegg: false
+    collegg: false,
+    spSwap: false      // standard permit player assumed to swap out of defl/SIAB at boost
 };
 const defaultArtifacts = {
     layRateArtis: [null, null, null, null], // 4 arti's
@@ -645,6 +650,12 @@ function generatePlayers(artiArray) {
         + "<br />" + '<b><u>Assumptions with SIAB in Boosted Arti Set:</u></b>'
         + "<br />" + 'SIAB is switched at designated time to a legendary in the same slot. This does assume that if gusset is swapped in, chickens are immediately maxed which will overshoot projections a bit. It also assumes there is only 1 swap time. That is, in old runs, if 1 player is using T4L SIAB and another T4E SIAB, the T4E will want to keep theirs in for longer in a real coop, '
         + 'but the simulation will switch theirs when it is optimal for the T4L player'
+        + "<br /><b><u>Standard Permit (SP ⇄) Artifact Swap:</b></u>"
+        + "<br />A player with two or fewer artifacts in both the boosted set and the IHR set is treated as a standard permit player, and is assumed to run deflector/SIAB from coop start until their boost, then swap to the IHR pair selected. "
+        + "Pre-boost teamwork is credited for whichever of deflector/SIAB is not already equipped in their IHR set; the best available tier of each is assumed. Anything already equipped there is simulated directly for the whole run and is never credited twice, including a low tier, since a standard permit player has no better copy to swap in. "
+        + "Neither artifact has a lay rate or shipping bonus, so only BTV changes — eggs delivered, contribution ratio and completion time are unaffected. Under cxp the BTV formula caps at 12% deflector and 50% SIAB, so tier is irrelevant there; the legacy formula is uncapped and assumes the best of each. "
+        + "A credited deflector raises only that player's own BTV — it does not feed the coop-wide lay rate bonus or the deflector-drop figures, since those are computed from equipped artifacts. The chalice or monocle given up during that window is treated as worth nothing, which overstates CS very slightly. "
+        + "Equipping a deflector and SIAB in the IHR set models them running past boost instead and disables this credit."
         + "<br /><b><u>Creator</b></u><br /> Creators do not get btv penalized during Join Delay time. Additionally, if Join Delay time is very long, and the creator(s) is at the top of the boost list, they could boost before Join Delay time is complete. If everyone is a creator, no one loses btv during Join Delay, and Join Delay time is ignored."
         + "<br /><b><u>Token Optimization</b></u><br /> It is impossible to search through all possible token values for any moderate coopSize. <br /> " + optimizerSummaryText.trim();
     containerInfo2.style.whiteSpace = "pre-wrap";
@@ -990,6 +1001,116 @@ function getArtifactFromDOM(playerIndex, slotIndex, itemLists) {
     ) ?? null;
 }
 
+// ─── STANDARD PERMIT ARTIFACT SWAP ────────────────────────────────────────
+// A standard permit player only has two artifact slots, so they run deflector/SIAB up
+// to their boost and then swap to their IHR pair (chalice, monocle, ...) for the hab
+// fill. The sandbox has one IHR set per player and can't represent that swap directly,
+// so instead of adding a third artifact set we credit the pre-boost set after the fact.
+//
+// This is exact as long as an IHR artifact is worth nothing pre-boost: neither the
+// deflector nor the SIAB has an elrmult/srmult, so they reach CS only through
+// updateBTV. Crediting BTV therefore leaves eggs delivered, contribution ratio and
+// completion time untouched. Two approximations remain:
+//   1. The chalice/monocle given up for that window is not debited.
+//   2. A credited deflector raises only this player's own BTV. It does not feed
+//      `otherDefl` (the coop-wide lay rate bonus) or the deflector-drop figures, since
+//      those are computed from equipped artifacts before the sim runs.
+//
+// Trigger: at most two artifacts in BOTH sets, and at least one of deflector/SIAB not
+// already equipped in the IHR set. Whatever IS equipped there is simulated directly for
+// the whole run and is never credited again. See getStandardPermitCredit().
+// ───────────────────────────────────────────────────────────────────
+const SP_MAX_ARTIFACTS = 2;          // standard permit slot limit
+
+// Best available deflector/SIAB, read from the tables so they track any future edits.
+// The pre-boost set is assumed to be the player's best of each.
+//
+// Under cxp (new2p0) updateBTV caps both terms — min(deflectorPercent, 12) and
+// min(siabPercent, 50) — and every deflector from T3C up and every SIAB from T3C up
+// already exceeds its cap, so the exact values below don't matter there. They only
+// matter on the legacy BTV branch, which is uncapped and scales linearly with both.
+const SP_ASSUMED_DEFL_PERCENT = Math.max(...itemsIHRDefl.map(a => a.deflectorPercent));
+const SP_ASSUMED_SIAB_PERCENT = Math.max(...itemsIHRSIAB.map(a => a.siabPercent));
+
+// Counts artifacts actually equipped (non-Empty) in the boosted set and the IHR set.
+function getSlotUsage(playerIndex) {
+    let boosted = 0, ihr = 0;
+    for (let j = 1; j <= 4; j++) {
+        const el = document.getElementById(`player${playerIndex}_item${j}`);
+        if (el && el.value && el.value !== EMPTY_ITEM) boosted++;
+    }
+    for (let j = 5; j <= 8; j++) {
+        const el = document.getElementById(`player${playerIndex}_item${j}`);
+        if (el && el.value && el.value !== EMPTY_ITEM) ihr++;
+    }
+    return { boosted, ihr };
+}
+
+// Returns { defl, siab } — the artifact percentages to credit for this player's assumed
+// pre-boost set — or null if they aren't a standard permit player, or already have both
+// equipped in their IHR set.
+function getStandardPermitCredit(playerIndex) {
+    const { boosted, ihr } = getSlotUsage(playerIndex);
+    // Both sets have to look like a standard permit loadout.
+    if (boosted === 0 || ihr === 0) return null;
+    if (boosted > SP_MAX_ARTIFACTS || ihr > SP_MAX_ARTIFACTS) return null;
+
+    // Credit only what is missing. Anything equipped in the IHR set is the same physical
+    // artifact the player wore pre-boost, is already simulated for the whole run, and
+    // would be double counted if credited here — including a weak one, since a standard
+    // permit player has no better copy to swap in.
+    const defl = getDeflectorPerc(playerIndex) > 0 ? 0 : SP_ASSUMED_DEFL_PERCENT;
+    const siab = getSIABPerc(playerIndex) > 0 ? 0 : SP_ASSUMED_SIAB_PERCENT;
+
+    // Already running defl/SIAB through the fill — nothing to credit, nothing to flag.
+    if (defl === 0 && siab === 0) return null;
+
+    return { defl, siab };
+}
+
+// Adds the assumed pre-boost set's BTV for every flagged player. Must run after the
+// simulation has finished accumulating BTV and before getCSMaxMean() turns it into
+// teamwork/CS.
+function applyStandardPermitCredit(players, simConfig, coopResult) {
+    const { duration, new2p0 } = simConfig;
+    const endTime = coopResult.completionTime > 0
+        ? Math.min(coopResult.completionTime, duration)
+        : duration;
+
+    players.forEach(player => {
+        player.stats.spSwapBTV = 0;
+        player.stats.spSwapWindow = 0;
+        if (!player.flags.spSwap) return;
+
+        // The pre-boost set comes off when the player boosts. timeToBoost is left at
+        // `duration` for anyone who never boosts — they never swap, so the credit runs
+        // to completion instead.
+        const window = Math.min(player.stats.timeToBoost, endTime);
+        if (!(window > 0)) return;
+
+        // Reuse updateBTV rather than reimplementing it, so the credit always matches
+        // whichever BTV formula is active. Both branches are separable in deflector and
+        // SIAB, so feeding only the missing percentages yields exactly the missing BTV;
+        // anything already equipped is passed as 0 and contributes nothing here.
+        const savedSiab = player.stats.siabPercent;
+        const savedDefl = player.stats.deflectorPercent;
+        const savedBtv = player.stats.btv;
+
+        player.stats.deflectorPercent = player.stats.spCreditDefl;
+        player.stats.siabPercent = player.stats.spCreditSiab;
+        player.stats.btv = 0;
+        player.updateBTV(window, new2p0);
+        const credit = player.stats.btv;
+
+        player.stats.siabPercent = savedSiab;
+        player.stats.deflectorPercent = savedDefl;
+        player.stats.btv = savedBtv + credit;
+        player.stats.spSwapBTV = credit;
+        player.stats.spSwapWindow = window;
+        // getTeamwork() clamps btvRat at 2, so the teamwork cap still applies normally.
+    });
+}
+
 function buildPlayersFromUI(simConfig) {
     const players = [];
     let totDeflector = 0;
@@ -997,6 +1118,7 @@ function buildPlayersFromUI(simConfig) {
     for (let i = 0; i < simConfig.numPlayers; i++) {
         const defl = getDeflectorPerc(i);
         totDeflector += defl;
+        const spCredit = getStandardPermitCredit(i);
 
         // Get Artifacts from DOM
         const layArtifacts = [];
@@ -1018,6 +1140,8 @@ function buildPlayersFromUI(simConfig) {
                 maxChickens: getMaxChickens(i),
                 deflectorPercent: defl,
                 siabPercent: getSIABPerc(i),
+                spCreditDefl: spCredit ? spCredit.defl : 0,
+                spCreditSiab: spCredit ? spCredit.siab : 0,
                 timeToBoost: simConfig.duration,
                 TE: document.getElementById(`playerTE${i}`).value
             },
@@ -1036,7 +1160,8 @@ function buildPlayersFromUI(simConfig) {
                 needsMirror: document.getElementById(`playerMirror${i}`).checked,
                 isSink: document.getElementById(`Sink${i}`).checked,
                 isCreator: document.getElementById(`Creator${i}`).checked,
-                collegg: document.getElementById(`Shipping-colleggtible${i}`).checked
+                collegg: document.getElementById(`Shipping-colleggtible${i}`).checked,
+                spSwap: spCredit !== null
             },
             artifacts: layArtifacts
         });
@@ -1277,6 +1402,9 @@ function RunSimulation(players, simConfig) {
         coopResult.completionTime = simState.t_elapsed;
         coopResult.success = true;
     }
+    // Standard permit players: add the assumed pre-boost set's BTV before teamwork/CS.
+    applyStandardPermitCredit(players, simConfig, coopResult);
+
     [coopResult.meanCS, coopResult.maxCS, coopResult.minCS] = getCSMaxMean(players, simConfig, coopResult);
 
 
@@ -1739,7 +1867,23 @@ function fillTableUnified(players, results, simConfig, siabSwapTime = null) {
         // Player Name + Sink info
         let T = player.flags?.isSink ? 2 : (document.getElementById('tokenToggle').checked ? 10 : 0);
         T = (numPlayers === 1) ? 0 : T;
+        // Standard permit swap: highlight the row so the BTV bump is never unexplained.
+        const isSP = !!player.flags?.spSwap;
+        rows[i].style.backgroundColor = isSP ? 'rgba(245, 158, 11, 0.10)' : '';
+
         cells[cnt].innerHTML = player.name;
+        if (isSP) {
+            const spCredited = [
+                player.stats.spCreditDefl > 0 ? 'deflector' : null,
+                player.stats.spCreditSiab > 0 ? 'SIAB' : null
+            ].filter(Boolean).join(' + ');
+            const spTip = `Standard permit: assumed deflector/SIAB until boost `
+                + `(${secondsToString(player.stats.spSwapWindow)}), then swapped to the IHR pair shown. `
+                + `Credited pre-boost teamwork for: ${spCredited}.`;
+            cells[cnt].innerHTML += ` <span title="${spTip}" style="font-size:10px; padding:0 4px;`
+                + ` border:1px solid var(--amber, #f59e0b); border-radius:3px;`
+                + ` color:var(--amber, #f59e0b); white-space:nowrap; cursor:help;">SP ⇄</span>`;
+        }
         if (player.flags?.isSink && !new2p0) {
             cells[cnt].innerHTML += `<br> &#x1FAC2;<br>${calcSinkCR(numPlayers, durDays)}${CR_txt}, ${T}${BT_txt}`;
         }
@@ -1785,7 +1929,19 @@ function fillTableUnified(players, results, simConfig, siabSwapTime = null) {
         cells[cnt++].innerHTML = (player.stats.timeToBoost == duration ? "N/A" : secondsToString(player.stats.timeToBoost))
             + "<br>" + secondsToString(player.stats.boostingTime);
         // BTV
-        cells[cnt++].textContent = (Math.round(player.stats.btvRat * 1e3) / 1e3).toString();
+        cells[cnt].textContent = (Math.round(player.stats.btvRat * 1e3) / 1e3).toString();
+        if (isSP && player.stats.spSwapBTV > 0 && completionTime > 0) {
+            const spBtvRat = player.stats.spSwapBTV / completionTime;
+            const spParts = [
+                player.stats.spCreditDefl > 0 ? 'deflector' : null,
+                player.stats.spCreditSiab > 0 ? 'SIAB' : null
+            ].filter(Boolean).join(' + ');
+            cells[cnt].title = `Includes +${(Math.round(spBtvRat * 1e3) / 1e3)} from the assumed `
+                + `pre-boost ${spParts} (${secondsToString(player.stats.spSwapWindow)}).`;
+        } else {
+            cells[cnt].removeAttribute('title');
+        }
+        cnt++;
         // Teamwork
         cells[cnt++].textContent = (Math.round(player.stats.tw * 1e6) / 1e6).toString();
 
@@ -1834,8 +1990,54 @@ function fillTableUnified(players, results, simConfig, siabSwapTime = null) {
         meanCS = defMeanCS / numPlayers;
     }
 
+    updateSPSwapNote(players);
+
     return [meanCS, maxCS, minCS];
 }
+
+// Footnote under the results table, shown only while at least one player is flagged as
+// a standard permit swap. Created on demand so index.html needs no new markup.
+function updateSPSwapNote(players) {
+    const table = document.getElementById('playersTable');
+    if (!table) return;
+
+    let note = document.getElementById('spSwapNote');
+    const spNames = players.filter(p => p.flags?.spSwap).map(p => p.name);
+
+    if (!spNames.length) {
+        if (note) note.remove();
+        return;
+    }
+
+    if (!note) {
+        note = document.createElement('div');
+        note.id = 'spSwapNote';
+        note.style.cssText = 'margin: 8px 0 4px; padding: 6px 10px; font-size: 12px;'
+            + ' line-height: 1.5; border-left: 3px solid var(--amber, #f59e0b);'
+            + ' background: rgba(245, 158, 11, 0.08); color: var(--text-secondary, #ccc);';
+        table.parentNode.insertBefore(note, table.nextSibling);
+    }
+
+    const withDefl = players.filter(p => p.flags?.spSwap && p.stats.spCreditDefl > 0).length;
+    const withSiab = players.filter(p => p.flags?.spSwap && p.stats.spCreditSiab > 0).length;
+    const credited = [
+        withDefl ? 'deflector' : null,
+        withSiab ? 'SIAB' : null
+    ].filter(Boolean).join(' and ');
+
+    note.innerHTML = `<b>SP ⇄ — standard permit swap assumed</b> for: ${spNames.join(', ')}.`
+        + ` These players have two artifacts or fewer in both sets, so they are assumed to run`
+        + ` <b>deflector/SIAB from coop start until they boost</b>, then swap to the IHR pair shown.`
+        + ` Pre-boost teamwork is credited for whichever of those two is <i>not</i> already in their`
+        + ` IHR set (here: <b>${credited}</b>); anything that is equipped there is simulated directly`
+        + ` for the whole run and is not credited twice. Only BTV changes — lay rate, ship rate,`
+        + ` chickens and contribution are unaffected, since neither artifact has a rate bonus.`
+        + ` A credited deflector raises only that player's own BTV, not the coop-wide lay rate bonus`
+        + ` or the deflector-drop figures. The chalice/monocle given up for that window is not`
+        + ` deducted, which overstates CS very slightly. Equip a deflector and SIAB in the IHR set`
+        + ` to model them running past boost instead, and this credit turns off.`;
+}
+
 function fillTable2SIAB(players, completionTime, targetEggAmount, duration, tswap, new2p0) {
     const numPlayers = parseInt(document.getElementById('numPlayers').value, 10);
     const table = document.getElementById('playersTable');
