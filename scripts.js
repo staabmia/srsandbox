@@ -21,7 +21,9 @@ const defaultStats = {
     spSwapBTV: 0,      // BTV credited for the assumed SP pre-boost set
     spSwapWindow: 0,   // length of the window that credit covers, seconds
     spCreditDefl: 0,   // deflector % credited pre-boost (0 = already equipped)
-    spCreditSiab: 0    // SIAB % credited pre-boost (0 = already equipped)
+    spCreditSiab: 0,   // SIAB % credited pre-boost (0 = already equipped)
+    chickensNeeded: 0, // chickens at which the lay-rate set is shipping-capped (early swap)
+    swapTime: 0        // sim time the IHR set was swapped for the lay-rate set
 };
 const defaultRates = {
     ihr: 0,
@@ -30,6 +32,8 @@ const defaultRates = {
     baseELR: 0,
     layRate: 0,
     shipRate: 0,
+    ihrLaySet: 0,        // IHR once the IHR set is swapped out (no chalice/monocle/life stones)
+    maxDeliveryRate: 0,  // best delivery rate the lay-rate set can reach at full habs
 }
 const defaultFlags = {
     needsMirror: false,
@@ -38,7 +42,8 @@ const defaultFlags = {
     maxHab: false,
     siabActive: false,
     collegg: false,
-    spSwap: false      // standard permit player assumed to swap out of defl/SIAB at boost
+    spSwap: false,     // standard permit player assumed to swap out of defl/SIAB at boost
+    swapped: false     // lay-rate set equipped (at max habs, or early once shipping-capped)
 };
 const defaultArtifacts = {
     layRateArtis: [null, null, null, null], // 4 arti's
@@ -94,6 +99,95 @@ class PlayerClass {
         this.stats.btv += updateRate * btvRate / 100;
     }
 
+    // ── Lay-rate set / early swap helpers ──────────────────────────────────
+    // Rates this player would have with the lay-rate set equipped and `chickens`
+    // chickens, given the deflector the rest of the coop currently runs (stats.otherDefl).
+    calcLaySetRates(chickens) {
+        let elr = chickens * this.rates.baseELR;
+        let sr = this.rates.baseShip;
+        let slots = 0;
+        for (let i = 0; i < 4; i++) {
+            const a = this.artifacts[i];
+            elr *= a.elrmult;
+            sr *= a.srmult;
+            slots += a.slots;
+        }
+        elr *= (1 + this.stats.otherDefl / 100);
+        const [layRate, shipRate, nTach, nQuant] = optimizeStones(elr, sr, slots);
+        return { layRate, shipRate, deliveryRate: Math.min(layRate, shipRate), numTach: nTach, numQuant: nQuant };
+    }
+
+    applyRates({ layRate, shipRate, deliveryRate, numTach, numQuant }) {
+        this.rates.layRate = layRate;
+        this.rates.shipRate = shipRate;
+        this.rates.deliveryRate = deliveryRate;
+        this.stats.numTach = numTach;
+        this.stats.numQuant = numQuant;
+    }
+
+    // Works out how many chickens the lay-rate set actually needs. The best delivery rate
+    // is what the set reaches at full habs (stones split optimally). If shipping is the
+    // bottleneck there, fewer chickens reach the same rate: put as many stones into
+    // tachyon as shipping can spare, then solve lay rate = that delivery rate for chickens.
+    // Never exceeds habsize. Must be re-run whenever stats.otherDefl changes.
+    updateSwapTarget() {
+        const EPS = 1e-9;
+        const maxChickens = this.stats.maxChickens;
+        const maxDelivery = this.calcLaySetRates(maxChickens).deliveryRate;
+
+        let elrPerChicken = this.rates.baseELR;
+        let srBase = this.rates.baseShip;
+        let slots = 0;
+        for (let i = 0; i < 4; i++) {
+            const a = this.artifacts[i];
+            elrPerChicken *= a.elrmult;
+            srBase *= a.srmult;
+            slots += a.slots;
+        }
+        elrPerChicken *= (1 + this.stats.otherDefl / 100);
+
+        // Most tachyons possible while the remaining quants still ship maxDelivery
+        let tach = 0;
+        for (let t = slots; t >= 0; t--) {
+            if (srBase * Math.pow(1.05, slots - t) >= maxDelivery * (1 - EPS)) { tach = t; break; }
+        }
+
+        let needed = Math.ceil(maxDelivery / (elrPerChicken * Math.pow(1.05, tach)));
+        if (!isFinite(needed) || needed >= maxChickens * (1 - EPS)) needed = maxChickens;
+
+        this.stats.chickensNeeded = Math.max(0, needed);
+        this.rates.maxDeliveryRate = maxDelivery;
+    }
+
+    // Habs full, or on the lay-rate set and already delivering its best possible rate.
+    // Settled players stop hatching; the sim reaches steady state once everyone is settled.
+    isSettled() {
+        if (this.flags.maxHab) return true;
+        return this.flags.swapped
+            && this.rates.deliveryRate >= this.rates.maxDeliveryRate * (1 - 1e-9);
+    }
+
+    // Early swap: don't hatch past the chickens needed (only trims within the crossing tick).
+    capAtSwapTarget(prevChickens) {
+        const target = this.stats.chickensNeeded;
+        if (prevChickens < target && this.stats.chickens > target) {
+            this.stats.chickens = target;
+            this.flags.maxHab = (target >= this.stats.maxChickens);
+        }
+    }
+
+    // Swap the IHR set for the lay-rate set.
+    swapToLaySet(t_elapsed, duration) {
+        this.flags.swapped = true;
+        this.stats.swapTime = t_elapsed;
+        this.stats.boostingTime = this.stats.timeToBoost > 0 && this.stats.timeToBoost < duration
+            ? t_elapsed - this.stats.timeToBoost  // boosted before swapping
+            : t_elapsed;
+        // IHR set is gone; any further hatching uses the bare IHR
+        this.rates.ihr = this.rates.ihrLaySet;
+        updateArtis(null, this);
+    }
+
 };
 
 
@@ -134,7 +228,7 @@ const tableColumns = [
     'sr (q/hr)',
     'Population',
     'Contr. Ratio',
-    'Pre-Boost/Time Boosting <span class="info-tip info-tip--down" data-tip="Pre-Boost: Time from coop start until the player\'s boost begins. Time Boosting: Time from boost start until habs are full (or time to fill habs naturally if max was reached before boosting).">?</span>',
+    'Pre-Boost/Time Boosting <span class="info-tip info-tip--down" data-tip="Pre-Boost: Time from coop start until the player\'s boost begins. Time Boosting: Time from boost start until the lay-rate set is swapped in, at full habs or once shipping is capped if early swap is on (or time from coop start if the swap came before boosting).">?</span>',
     'BTV / complTime',
     'Teamwork',
     'CS'
@@ -650,6 +744,11 @@ function generatePlayers(artiArray) {
         + "<br />" + '<b><u>Assumptions with SIAB in Boosted Arti Set:</u></b>'
         + "<br />" + 'SIAB is switched at designated time to a legendary in the same slot. This does assume that if gusset is swapped in, chickens are immediately maxed which will overshoot projections a bit. It also assumes there is only 1 swap time. That is, in old runs, if 1 player is using T4L SIAB and another T4E SIAB, the T4E will want to keep theirs in for longer in a real coop, '
         + 'but the simulation will switch theirs when it is optimal for the T4L player'
+        + "<br /><b><u>IHR → Lay-Rate Artifact Swap:</b></u>"
+        + "<br />With 'Swap once shipping capped?' off, players keep their IHR set until habs are full. With it on, each player swaps as soon as they have enough chickens for their lay-rate set to match its best shipping rate (stones split optimally, never more than habsize), using the coop deflector in place at that moment. "
+        + "After swapping they only keep hatching (at bare IHR, no chalice/monocle/life stones) if a deflector change leaves them lay-rate limited again. The Population column shows how full each early-swapped player's habs are. "
+        + "<br /><b><u>Estimate CS Ranges — Deflector Drop (↳ lines):</b></u>"
+        + "<br />For the all-legendary and 1 SIAB cases, if the coop's unused deflector % covers at least one whole T4L deflector, the last k players swap their deflector for a 3 Slot (k = whole deflectors unused, stepping down until it helps). The ↳ line shows the result when it beats nobody dropping; its low end is usually a dropper. "
         + "<br /><b><u>Standard Permit (SP ⇄) Artifact Swap:</b></u>"
         + "<br />A player with two or fewer artifacts in both the boosted set and the IHR set is treated as a standard permit player, and is assumed to run deflector/SIAB from coop start until their boost, then swap to the IHR pair selected. "
         + "Pre-boost teamwork is credited for whichever of deflector/SIAB is not already equipped in their IHR set; the best available tier of each is assumed. Anything already equipped there is simulated directly for the whole run and is never credited twice, including a low tier, since a standard permit player has no better copy to swap in. "
@@ -980,6 +1079,7 @@ function buildSimConfigFromUI() {
         btvTarget: parseFloat(document.getElementById('btvTarget').value),
         new2p0: document.getElementById('cxpToggle').checked,
         GG: document.getElementById('GGToggle').checked ? 2 : 1,
+        earlySwap: document.getElementById('earlySwapToggle')?.checked ?? false,
         btvtargetobj: document.getElementById('btvTarget'),
         btvlabel: document.getElementById('btvTargetLabel'),
         SIABtext: document.getElementById('SIABSwapContainer'),
@@ -1147,6 +1247,7 @@ function buildPlayersFromUI(simConfig) {
             },
             rates: {
                 ihr: calcIHR(i),
+                ihrLaySet: calcIHRLaySet(i),
                 baseShip:
                     2978359222414.5 * 2400 *
                     getCollegtibleShip(i) *
@@ -1328,6 +1429,11 @@ function RunSimulation(players, simConfig) {
         totalDeflector: 0
     };
 
+    // Early swap: work out how many chickens each player's lay-rate set needs
+    if (simConfig.earlySwap) {
+        players.forEach(player => player.updateSwapTarget());
+    }
+
     // Simulate CRT if first player is creator
     if (players[0].flags.isCreator) {
         if (simState.t_elapsed < crtTime)
@@ -1408,16 +1514,20 @@ function RunSimulation(players, simConfig) {
     [coopResult.meanCS, coopResult.maxCS, coopResult.minCS] = getCSMaxMean(players, simConfig, coopResult);
 
 
-    const [data, data2, repeatedPrefix] = gatherDOMData();
-    const base64Data = dataToBase64(data, data2);
+    // Skipped during token optimization: thousands of history.replaceState calls
+    // get throttled/throw on mobile browsers and slow everything else down.
+    if (!simConfig.skipUrlUpdate) {
+        const [data, data2, repeatedPrefix] = gatherDOMData();
+        const base64Data = dataToBase64(data, data2);
 
-    let version = curentURLEncodeVer;
+        let version = curentURLEncodeVer;
 
-    // If compressed names, replace the middle '-' with '_'
-    if (repeatedPrefix) {
-        version = curentURLEncodeVer.replace('-', '_'); // 'v_4'
+        // If compressed names, replace the middle '-' with '_'
+        if (repeatedPrefix) {
+            version = curentURLEncodeVer.replace('-', '_'); // 'v_4'
+        }
+        updateUrlWithBase64(version + base64Data);
     }
-    updateUrlWithBase64(version + base64Data);
 
     return coopResult;
 }
@@ -1608,26 +1718,35 @@ function simUpdateRate(players, simConfig, simState, coopResult, simTime, crtFla
         0
     );
 
+    const earlySwap = !!simConfig.earlySwap;
+
+    // allMaxHabs now means "everyone settled": habs full, or (early swap) on the
+    // lay-rate set and shipping-capped. With early swap off the two are identical.
     while (eggsDelivered < targetEggAmount && t_elapsed < simTime && !allMaxHabs) {
         let totNotMaxHabs = 0;
         coopResult.totalDeflector = 0;
         updateOtherDefl = false;
         players.forEach((player, index) => {
-            if (!player.flags.maxHab && (!crtFlag || player.flags.isCreator)) {
+            if (!player.isSettled() && (!crtFlag || player.flags.isCreator)) {
+                const prevChickens = player.stats.chickens;
                 player.updateChickens();
-                player.updateDeliveryRate();
+                if (earlySwap) player.capAtSwapTarget(prevChickens);
                 totNotMaxHabs++;
-                if (player.flags.maxHab == true) {
-                    // Boost Time
-                    //time = t_elapsed - player.stats.timeToBoost;
-                    //player.stats.boostingTime = t_elapsed - player.stats.timeToBoost;
-                    player.stats.boostingTime = player.stats.timeToBoost > 0 && player.stats.timeToBoost < duration
-                        ? t_elapsed - player.stats.timeToBoost  // boosted before maxHab
-                        : t_elapsed;
-                    //Player reached max, swap artis
-                    updateArtis(index, player);
-                    // Trigger a deflectorchangeto update all rates
-                    updateOtherDefl = true;
+
+                if (player.flags.swapped) {
+                    // Already on the lay-rate set but not yet shipping-capped
+                    // (e.g. coop deflector dropped): keep hatching at the bare IHR.
+                    player.applyRates(player.calcLaySetRates(player.stats.chickens));
+                } else {
+                    player.updateDeliveryRate();
+                    const hitSwapTarget = earlySwap
+                        && player.stats.chickens >= player.stats.chickensNeeded;
+                    if (player.flags.maxHab || hitSwapTarget) {
+                        // Habs full, or enough chickens to cap shipping: swap artis
+                        player.swapToLaySet(t_elapsed, duration);
+                        // Trigger a deflector change to update all rates
+                        updateOtherDefl = true;
+                    }
                 }
             }
             coopResult.totalDeflector += player.stats.deflectorPercent;
@@ -1646,6 +1765,10 @@ function simUpdateRate(players, simConfig, simState, coopResult, simTime, crtFla
                     player.rates.deliveryRate = Math.min(player.rates.layRate, player.rates.shipRate);
                 }
             });
+            // Coop deflector changed, so everyone's chicken target moves too
+            if (earlySwap) {
+                players.forEach(player => player.updateSwapTarget());
+            }
         }
 
         // Check if all players have max Habs
@@ -1668,8 +1791,8 @@ function simUpdateRate(players, simConfig, simState, coopResult, simTime, crtFla
         if (!allBoosting) {
             const nextPlayer = players[numberBoosting];
             if (!crtFlag || nextPlayer.flags.isCreator) {
-                if (nextPlayer.flags.maxHab) {
-                    // Already at max habs — skip without spending tokens
+                if (nextPlayer.isSettled()) {
+                    // Already at max habs (or shipping-capped) — skip without spending tokens
                     nextPlayer.stats.timeToBoost = duration; // optional: record when this was noted
                     numberBoosting++;
                 } else if (nextPlayer.tokens <= (totTokens - tokensUsed)) {
@@ -1719,7 +1842,10 @@ function saveDataBeforeSwap(players) {
                 layRate: player.rates.layRate,
                 shipRate: player.rates.shipRate,
                 deliveryRate: player.rates.deliveryRate
-            }
+            },
+            // Early-swapped players below habsize: rates they could reach at full habs
+            // with this set (used for the unused deflector estimate)
+            ratesAtMaxHab: rateAtMaxHab(player)
         };
     });
 
@@ -1911,7 +2037,8 @@ function fillTableUnified(players, results, simConfig, siabSwapTime = null) {
                 quantImage
             );
             // Chickens stacked
-            cells[cnt++].innerHTML = `${commafy(before.stats.chickens)}<br>${commafy(base.stats.chickens)}`;
+            cells[cnt++].innerHTML = `${commafy(before.stats.chickens)}<br>${commafy(base.stats.chickens)}`
+                + earlySwapHabNote(base);
         } else {
             base = siabActive ? player.beforeSwap : player;
             // ELR
@@ -1919,7 +2046,7 @@ function fillTableUnified(players, results, simConfig, siabSwapTime = null) {
             // SR
             cells[cnt++].innerHTML = formatRateCell(base.rates.shipRate, base.rates.layRate, base.stats.numQuant, quantImage);
             // Chickens
-            cells[cnt++].textContent = commafy(base.stats.chickens);
+            cells[cnt++].innerHTML = commafy(base.stats.chickens) + earlySwapHabNote(player);
         }
 
         // Contribution ratio
@@ -1993,6 +2120,16 @@ function fillTableUnified(players, results, simConfig, siabSwapTime = null) {
     updateSPSwapNote(players);
 
     return [meanCS, maxCS, minCS];
+}
+
+// Population cell note for players who swapped to the lay-rate set before habs were full.
+function earlySwapHabNote(player) {
+    const { chickens, maxChickens } = player.stats;
+    if (!player.flags?.swapped || !maxChickens || chickens >= maxChickens * (1 - 1e-9)) return '';
+    const pct = Math.round(chickens / maxChickens * 1000) / 10;
+    const tip = `Swapped to the lay-rate set at ${secondsToString(player.stats.swapTime)}, `
+        + `once shipping was capped. Habs ${pct}% full.`;
+    return `<br><span title="${tip}" style="font-size:10px; color:var(--text-muted); cursor:help; white-space:nowrap;">${pct}% habs</span>`;
 }
 
 // Footnote under the results table, shown only while at least one player is flagged as
@@ -2382,6 +2519,16 @@ function calcSinkCR(numPlayers, durDays) {
 }
 
 // Note: totDeflector is total coop deflector %
+// Rates used for the unused deflector estimate. A player who swapped early stops at
+// lay rate = shipping, which would always read as 0% unused; what matters is the lay
+// rate they could reach at full habs. Everyone else: their actual rates.
+function rateAtMaxHab(player) {
+    if (player.flags?.swapped && player.stats.chickens < player.stats.maxChickens) {
+        return player.calcLaySetRates(player.stats.maxChickens);
+    }
+    return player.rates;
+}
+
 function getDeflectorDropPerc(players, totDeflector, siabCoop) {
     // Check if solo
     if (players.length < 2) return [totDeflector, totDeflector];
@@ -2392,7 +2539,8 @@ function getDeflectorDropPerc(players, totDeflector, siabCoop) {
     elrDivSrMin = Infinity;
     def = (totDeflector - players[0].stats.deflectorPercent) / 100 + 1;
     players.forEach((player, index) => {
-        currentPlayer = player.rates.layRate / player.rates.shipRate;
+        const r = rateAtMaxHab(player);
+        currentPlayer = r.layRate / r.shipRate;
         if (currentPlayer < elrDivSrMin) {
             elrDivSrMin = currentPlayer;
             def = (totDeflector - player.stats.deflectorPercent) / 100 + 1;
@@ -2410,7 +2558,8 @@ function getDeflectorDropPerc(players, totDeflector, siabCoop) {
         //elrDivSrMin2 = players[0].beforeSwap.rates.layRate / players[0].beforeSwap.rates.shipRate;
         def2 = (totDeflector - players[0].beforeSwap.stats.deflectorPercent) / 100 + 1;
         players.forEach((player, index) => {
-            currentPlayer = player.beforeSwap.rates.layRate / player.beforeSwap.rates.shipRate;
+            const rb = player.beforeSwap.ratesAtMaxHab || player.beforeSwap.rates;
+            currentPlayer = rb.layRate / rb.shipRate;
             if (currentPlayer < elrDivSrMin2) {
                 elrDivSrMin2 = currentPlayer;
                 def2 = (totDeflector - player.beforeSwap.stats.deflectorPercent) / 100 + 1;
@@ -2682,6 +2831,18 @@ function calcIHR(playerIndex) {
     return Math.floor(ihr);
 }
 
+// IHR after the IHR set is swapped out: no chalice/monocle/life stones,
+// but modifier, colleggtible and TE still apply.
+function calcIHRLaySet(playerIndex) {
+    let ihrLay = 7440;
+    if (document.getElementById('mod-name').value === 'IHR') {
+        ihrLay *= document.getElementById('modifiers').value;
+    }
+    ihrLay *= document.getElementById(`Shipping-colleggtible${playerIndex}`).checked ? 1.05 : 1;
+    ihrLay *= Math.pow(1.01, document.getElementById(`playerTE${playerIndex}`).value);
+    return Math.floor(ihrLay);
+}
+
 function calcRateSIABRemoved(players) {
 
     // First, get everyone's deflector total
@@ -2695,7 +2856,10 @@ function calcRateSIABRemoved(players) {
         elr = player.stats.chickens * player.rates.baseELR;
         sr = player.rates.baseShip;
         totSlotsAvailable = 0;
-        if (player.stats.maxChickens === player.stats.chickens) {
+        const atMaxHab = player.stats.maxChickens === player.stats.chickens;
+        // Early-swapped player below habsize: tops up to the new set's target (below)
+        const topUp = !atMaxHab && player.flags.swapped;
+        if (atMaxHab || player.flags.swapped) {
             for (let i = 0; i <= 3; i++) {
                 // Remove SIAB
                 if (player.artifacts[i].siabPercent > 0) {
@@ -2703,9 +2867,11 @@ function calcRateSIABRemoved(players) {
                     // Gusset replaced, Max chickens instantly
                     if (i == 3) {
                         // *= x.chickmult;
-                        player.stats.chickens *= player.artifacts[i].chickmult;
+                        if (atMaxHab) {
+                            player.stats.chickens *= player.artifacts[i].chickmult;
+                            elr *= player.artifacts[i].chickmult;
+                        }
                         player.stats.maxChickens *= player.artifacts[i].chickmult;
-                        elr *= player.artifacts[i].chickmult;
                     }
                 }
                 elr *= player.artifacts[i].elrmult;
@@ -2716,6 +2882,15 @@ function calcRateSIABRemoved(players) {
 
         elr *= (1 + (totDeflector - player.stats.deflectorPercent) / 100);
         [elr, sr, numTach, numQuant] = optimizeStones(elr, sr, totSlotsAvailable);
+
+        if (topUp) {
+            // Same "chickens appear instantly" assumption as the gusset case above:
+            // hatch up to what the new set needs to stay shipping-capped.
+            player.stats.otherDefl = totDeflector - player.stats.deflectorPercent;
+            player.updateSwapTarget();
+            player.stats.chickens = Math.max(player.stats.chickens, player.stats.chickensNeeded);
+            ({ layRate: elr, shipRate: sr, numTach, numQuant } = player.calcLaySetRates(player.stats.chickens));
+        }
 
         player.rates.layRate = elr;
         player.rates.shipRate = sr;
@@ -2748,7 +2923,8 @@ function calcRate(playerIndex, chickens, players) {
     sr = players[playerIndex].rates.baseShip;
     totDeflector = 0;
     totSlotsAvailable = 0;
-    if (players[playerIndex].stats.maxChickens === chickens) {
+    const useLaySet = players[playerIndex].flags.swapped || players[playerIndex].stats.maxChickens === chickens;
+    if (useLaySet) {
         for (let i = 0; i <= 3; i++) {
             elr *= players[playerIndex].artifacts[i].elrmult;
             sr *= players[playerIndex].artifacts[i].srmult;
@@ -2764,7 +2940,7 @@ function calcRate(playerIndex, chickens, players) {
         }
     }
     elr *= (1 + totDeflector / 100);
-    if (players[playerIndex].stats.maxChickens === chickens) {
+    if (useLaySet) {
         [elr, sr, numTach, numQuant] = optimizeStones(elr, sr, totSlotsAvailable);
     }
     // Update player class
@@ -3937,6 +4113,7 @@ function onPlayersGenerated() {
     document.getElementById('crtToggle').onchange = () => Run();
     document.getElementById('tokenToggle').onchange = () => Run();
     document.getElementById('GGToggle').onchange = () => Run();
+    document.getElementById('earlySwapToggle').onchange = () => Run();
     document.getElementById('crttime').onchange = () => Run();
     document.getElementById('mpft').onchange = () => Run();
     document.getElementById('duration').onchange = () => Run();
@@ -4173,8 +4350,12 @@ btn.addEventListener("click", () => {
 
 
 document.getElementById("runScenariosBtn").addEventListener("click", () => runScenarios());
-document.getElementById("runTokenScenariosBtn").addEventListener("click", () => optimizeWithOuterFirstPlayer(0));
-document.getElementById("runTokenScenariosMeanBtn").addEventListener("click", () => optimizeWithOuterFirstPlayer(1));
+function showOptimizerError(e) {
+    document.getElementById('scenarioHtmlOutput').innerHTML = `<pre>Error: ${e.message}\n${e.stack}</pre>`;
+    document.getElementById('scenarioOutputContainer').classList.remove('hidden');
+}
+document.getElementById("runTokenScenariosBtn").addEventListener("click", () => optimizeWithOuterFirstPlayer(0).catch(showOptimizerError));
+document.getElementById("runTokenScenariosMeanBtn").addEventListener("click", () => optimizeWithOuterFirstPlayer(1).catch(showOptimizerError));
 
 function runScenarios() {
     //[data, data2] = gatherData();
@@ -4190,6 +4371,8 @@ function runScenarios() {
 
 
     Run();
+    // Run() already wrote the URL; the scenario sims below don't need to
+    simConfig.skipUrlUpdate = true;
     /*
     scenarios.forEach(scenario => {
         const players = basePlayers.map((p, i) => {
@@ -4230,6 +4413,14 @@ function runScenarios() {
     // instead of legendary, if that was shown to beat the baseline above.
     const siabTest = testSinglePlayerSIAB(playersLeg, simConfig, baseline, deflBetter, compBetter);
 
+    // Deflector drop check (legendary and 1-SIAB cases only, to keep output short):
+    // with more unused deflector than one whole deflector, some players can swap
+    // theirs for a 3 Slot. Skipped when everyone already runs a 3 Slot there.
+    // (The legendary case is checked in the scenario loop below.)
+    if (siabTest && !deflBetter) {
+        siabTest.result.dropVariant = testDeflectorDrop(basePlayers, simConfig, compBetter, siabTest.slot);
+    }
+
 
     if (siabTest) {
 
@@ -4256,13 +4447,16 @@ function runScenarios() {
 
     // Run all baseline/legendary-tier scenarios, applying the 3-slot edge case
     // swaps (and updated names) wherever they were shown to beat the baseline.
-    scenarios.forEach((scenario) => {
+    scenarios.forEach((scenario, scenarioIndex) => {
         const players = basePlayers.map((p, i) => {
             const clone = clonePlayer(p);
             return clone;
         });
         scenario.apply(players, deflBetter, compBetter);
         const res = RunSimulation(players, simConfig);
+        if (scenarioIndex === 0 && !deflBetter) {
+            res.dropVariant = testDeflectorDrop(basePlayers, simConfig, compBetter, null);
+        }
         results.push({
             name: scenario.getName ? scenario.getName(deflBetter, compBetter) : scenario.name,
             ...res
@@ -4380,6 +4574,48 @@ function runHalfSIAB(basePlayers, simConfig, slot, deflBetter, compBetter) {
     return RunSimulation(players, simConfig);
 }
 
+// T4L legendaries for everyone (3 Slot compass if compBetter), optional T4L SIAB for
+// player 0, and the last `k` players running a 3 Slot instead of their deflector.
+function buildDeflDropPlayers(basePlayers, compBetter, siabSlot, k) {
+    const players = basePlayers.map(p => clonePlayer(p));
+    setDefaultArtifacts(players, false, compBetter);
+    if (siabSlot !== null) applySIAB(players[0], siabSlot);
+    const N = players.length;
+    for (let i = N - k; i < N; i++) {
+        players[i].artifacts[0] = get3SlotItem(1);
+    }
+    handleArtifactChange(players);
+    return players;
+}
+
+// Deflector drop check. Simulates the setup above with nobody dropping, reads the
+// coop's unused deflector %, and if that covers at least one whole deflector tries
+// k = (whole deflectors unused) down to 1 droppers. Droppers are the last players, so
+// player 0 keeps the top score. Returns the best { result, k } that beats nobody
+// dropping, or null.
+function testDeflectorDrop(basePlayers, simConfig, compBetter, siabSlot) {
+    const N = basePlayers.length;
+    if (N < 2) return null;
+
+    const refPlayers = buildDeflDropPlayers(basePlayers, compBetter, siabSlot, 0);
+    const ref = RunSimulation(refPlayers, simConfig);
+    if (!ref.success) return null;
+
+    // [before SIAB swap, after]; with SIAB, allow the larger and let the sim decide
+    const [unusedBefore, unusedAfter] = getDeflectorDropPerc(refPlayers, ref.totalDeflector, ref.siabActive);
+    const unused = ref.siabActive ? Math.max(unusedBefore, unusedAfter) : unusedAfter;
+    const deflPercent = itemLists[1][0].deflectorPercent;
+    const kMax = Math.min(Math.floor(unused / deflPercent), N - 1);
+
+    let best = null;
+    for (let k = kMax; k >= 1; k--) {
+        const res = RunSimulation(buildDeflDropPlayers(basePlayers, compBetter, siabSlot, k), simConfig);
+        const bar = best ? best.result.maxCS : ref.maxCS;
+        if (res.success && res.maxCS > bar) best = { result: res, k };
+    }
+    return best;
+}
+
 function collectScenarioResults() {
     const coopTable = document.getElementById("coopTable");
     const cells = coopTable.querySelectorAll("td");
@@ -4455,14 +4691,23 @@ function displayScenarioResults(results, hasSIAB) {
     const complTime = approxTime(results[4].completionTime); //estimate completion time using mixed deflectors
 
 
-    let output = results
-        .map(r => `- ${(r.minCS / 1e3).toFixed(1)}k - ${(r.maxCS / 1e3).toFixed(1)}k (${r.name})`);
+    const csRange = r => `${(r.minCS / 1e3).toFixed(1)}k - ${(r.maxCS / 1e3).toFixed(1)}k`;
+    const siabCount = hasSIAB ? (numPlayers > 3 ? 2 : 1) : 0;
+    let siabLineCount = 0;
+    const output = [];
+    results.forEach((r, i) => {
+        const lines = [`- ${csRange(r)} (${r.name})`];
+        // Deflector drop variant: one compact line under its parent scenario
+        if (r.dropVariant) {
+            lines.push(`  ↳ ${csRange(r.dropVariant.result)} (${r.dropVariant.k} Defl. → 3 Slot)`);
+        }
+        if (i < siabCount) siabLineCount += lines.length;
+        output.push(...lines);
+    });
 
     if (hasSIAB) {
-        const siabCount = numPlayers > 3 ? 2 : 1;
-
-        output.splice(0, 0, "-----");            // before SIAB
-        output.splice(siabCount + 1, 0, "-----"); // after SIAB
+        output.splice(0, 0, "-----");                // before SIAB
+        output.splice(siabLineCount + 1, 0, "-----"); // after SIAB
     }
 
     output.unshift(`${numPlayers}p ${complTime}`); // `, [sim](${url})`);
@@ -4541,14 +4786,16 @@ document.addEventListener("input", hideScenarioOutput);
 document.addEventListener("change", hideScenarioOutput);
 const tokenSweepResults = [];
 
-function optimizeWithOuterFirstPlayer(meanFlag) {
+async function optimizeWithOuterFirstPlayer(meanFlag) {
     const simConfig = buildSimConfigFromUI();
+    simConfig.skipUrlUpdate = true;
 
     if (simConfig.numPlayers > 20) {
-        container = document.getElementById('scenarioOutputContainer');
         const textarea = document.getElementById("scenarioOutput");
         textarea.value = `Sorry, Optimization only available for size 20 or less`;
-        container.classList.remove("hidden");
+        textarea.style.display = "block";
+        document.getElementById("scenarioHtmlOutput").innerHTML = "";
+        document.getElementById('scenarioOutputContainer').classList.remove("hidden");
         return;
     }
     const basePlayers = buildPlayersFromUI(simConfig);
@@ -4559,11 +4806,24 @@ function optimizeWithOuterFirstPlayer(meanFlag) {
 
     let bestCS = -Infinity;
 
-    function evaluate(tokens) {
+    // Show progress UI
+    const container = document.getElementById('scenarioOutputContainer');
+    const htmlOut = document.getElementById('scenarioHtmlOutput');
+    const textarea = document.getElementById('scenarioOutput');
+    textarea.style.display = 'none';
+    htmlOut.innerHTML = '<pre>Optimizing... (0 scenarios evaluated)</pre>';
+    container.classList.remove('hidden');
+
+    // Yield to browser every YIELD_EVERY evaluations to keep UI responsive.
+    // Lower = more responsive but slightly more overhead from setTimeout clamping.
+    const YIELD_EVERY = 5;
+    let evalCount = 0;
+
+    async function evaluate(tokens) {
         const key = tokenKey(tokens);
         if (seen.has(key)) {
             evaluate.lastImproved = false;
-            return null;
+            return undefined; // already seen — caller should skip, not stop
         }
         seen.add(key);
 
@@ -4573,7 +4833,20 @@ function optimizeWithOuterFirstPlayer(meanFlag) {
             return clone;
         });
 
-        const results = RunSimulation(players, simConfig);
+        evalCount++;
+        if (evalCount % YIELD_EVERY === 0) {
+            htmlOut.innerHTML = `<pre>Optimizing... (${evalCount} scenarios evaluated)</pre>`;
+            await new Promise(resolve => setTimeout(resolve, 0));
+        }
+
+        let results;
+        try {
+            results = RunSimulation(players, simConfig);
+        } catch(e) {
+            evaluate.lastImproved = false;
+            return null;
+        }
+
         if (!results.success) {
             evaluate.lastImproved = false;
             return null;
@@ -4597,26 +4870,25 @@ function optimizeWithOuterFirstPlayer(meanFlag) {
 
     // Outer sweep: first player
     for (let p0 = 1; p0 <= 8; p0++) {
-        optimizeRestGivenFirstPlayer({
+        await optimizeRestGivenFirstPlayer({
             p0,
             basePlayers,
             simConfig,
             evaluate
         });
-
-
     }
-    x = 0;
+
+    if (tokenSweepResults.length === 0) return;
+
     const best = tokenSweepResults.reduce(
         (a, b) => (b.cs > a.cs ? b : a)
     );
 
     renderScenarioResults({ best, all: tokenSweepResults, meanFlag });
-    // return { best, all: tokenSweepResults };
 }
 
 
-function optimizeRestGivenFirstPlayer({
+async function optimizeRestGivenFirstPlayer({
     p0,
     basePlayers,
     simConfig,
@@ -4634,8 +4906,8 @@ function optimizeRestGivenFirstPlayer({
         const tokens = Array(N).fill(t);
         tokens[0] = p0;
 
-        const cs = evaluate(tokens);
-        if (cs !== null && cs > bestUniform.cs) {
+        const cs = await evaluate(tokens);
+        if (cs !== null && cs !== undefined && cs > bestUniform.cs) {
             bestUniform = { cs, tokens: [...tokens] };
         }
     }
@@ -4643,19 +4915,19 @@ function optimizeRestGivenFirstPlayer({
     if (!bestUniform.tokens) return;
 
     // --- Case B: front-loaded permutations (players 1 →)
-    frontLoadedNestedSweep({
+    await frontLoadedNestedSweep({
         baseTokens: bestUniform.tokens,
         evaluate
     });
 
     // --- Case C: back-loaded permutations (players N-1 ←)
-    backLoadedNestedSweep({
+    await backLoadedNestedSweep({
         baseTokens: bestUniform.tokens,
         evaluate
     });
 
     // --- Case D: symmetric front/back loading
-    symmetricNestedSweep({
+    await symmetricNestedSweep({
         baseTokens: bestUniform.tokens,
         evaluate
     });
@@ -4707,7 +4979,7 @@ function evaluateAndStore(basePlayers, simConfig, tokens, seen) {
     tokenSweepResults.push(entry);
     return entry.cs;
 }
-function frontLoadedNestedSweep({
+async function frontLoadedNestedSweep({
     baseTokens,
     evaluate,
     tokenCap = 12
@@ -4715,30 +4987,31 @@ function frontLoadedNestedSweep({
     const N = baseTokens.length;
     const tokens = [...baseTokens];
 
-    function sweepAt(index, localBestCS) {
+    async function sweepAt(index, localBestCS) {
         if (index >= N) return localBestCS;
 
         while (tokens[index] < tokenCap) {
             tokens[index]++;
 
-            const cs = evaluate(tokens);
+            const cs = await evaluate(tokens);
+            if (cs === undefined) {
+                // Already seen — don't roll back, just try next token value
+                continue;
+            }
             if (cs === null || cs <= localBestCS) {
                 tokens[index]--;
                 break;
             }
-            // Update local best for THIS path
             localBestCS = cs;
-
-            // For EACH value of this player,
-            // fully explore the next one to the right
-            localBestCS = sweepAt(index + 1, localBestCS);
+            localBestCS = await sweepAt(index + 1, localBestCS);
         }
+
+        return localBestCS;
     }
 
-    // Start at player 1 (player 0 is fixed)
-    sweepAt(1);
+    await sweepAt(1);
 }
-function backLoadedNestedSweep({
+async function backLoadedNestedSweep({
     baseTokens,
     evaluate,
     tokenCap = 12
@@ -4746,32 +5019,32 @@ function backLoadedNestedSweep({
     const N = baseTokens.length;
     const tokens = [...baseTokens];
 
-    function sweepAt(index, localBestCS) {
+    async function sweepAt(index, localBestCS) {
         if (index <= 0) return localBestCS;
 
         while (tokens[index] < tokenCap) {
             tokens[index]++;
 
-            const cs = evaluate(tokens);
+            const cs = await evaluate(tokens);
+            if (cs === undefined) {
+                continue;
+            }
             if (cs === null || cs <= localBestCS) {
                 tokens[index]--;
                 break;
             }
 
-            // Update local best for THIS path
             localBestCS = cs;
-
-            // For each of these, explore the next dimension
-            localBestCS = sweepAt(index - 1, localBestCS);
+            localBestCS = await sweepAt(index - 1, localBestCS);
         }
 
         return localBestCS;
     }
 
-    sweepAt(N - 1, -Infinity);
+    await sweepAt(N - 1, -Infinity);
 }
 
-function symmetricNestedSweep({
+async function symmetricNestedSweep({
     baseTokens,
     evaluate,
     tokenCap = 12
@@ -4781,12 +5054,12 @@ function symmetricNestedSweep({
 
     const maxDepth = Math.floor((N - 1) / 2);
 
-    function sweepAt(depth, localBestCS) {
+    async function sweepAt(depth, localBestCS) {
         const left = 1 + depth;
         const right = N - 1 - depth;
 
-        if (left >= right) return;
-        if (left <= 0 || right >= N) return;
+        if (left >= right) return localBestCS;
+        if (left <= 0 || right >= N) return localBestCS;
 
         while (
             tokens[left] < tokenCap &&
@@ -4795,23 +5068,24 @@ function symmetricNestedSweep({
             tokens[left]++;
             tokens[right]++;
 
-            const cs = evaluate(tokens);
+            const cs = await evaluate(tokens);
+            if (cs === undefined) {
+                continue;
+            }
             if (cs === null || cs <= localBestCS) {
                 tokens[left]--;
                 tokens[right]--;
                 break;
             }
 
-            // Update local best for THIS path
             localBestCS = cs;
-
-            // For EACH value of this symmetric pair,
-            // fully explore the next inner pair
-            sweepAt(depth + 1, localBestCS);
+            localBestCS = await sweepAt(depth + 1, localBestCS);
         }
+
+        return localBestCS;
     }
 
-    sweepAt(0);
+    await sweepAt(0);
 }
 
 function getResultsSortedByCS() {

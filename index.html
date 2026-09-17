@@ -144,6 +144,18 @@
                     </div>
 
                     <div class="field-row">
+                        <label for="earlySwapToggle" class="field-label">Swap once shipping capped? <span class="info-tip info-tip--down" data-tip="NO: keep the IHR set until habs are full. YES: swap to the lay-rate set once there are enough chickens to max out shipping. Not saved in the link.">?</span></label>
+                        <label class="pill-toggle">
+                            <input type="checkbox" id="earlySwapToggle">
+                            <span class="pill-track">
+                                <span class="pill-thumb"></span>
+                                <span class="pill-text-on">YES</span>
+                                <span class="pill-text-off">NO</span>
+                            </span>
+                        </label>
+                    </div>
+
+                    <div class="field-row">
                         <label for="crttime" class="field-label">Join Delay <span class="info-tip" data-tip="The amount of time between coop creation and players joining.">?</span></label>
                         <div class="input-with-unit">
                             <input type="number" id="crttime" min="0" value="0" onkeyup=enforceMinMaxDec(this)>
