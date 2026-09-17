@@ -809,7 +809,38 @@ function generatePlayers(artiArray) {
 }
 
 
+// Saved Ref CS values, keyed by player name (duplicate names keep a value each, in
+// row order). Kept here rather than in the table cells so the reference follows a
+// player when rows are reordered, and survives a rename-and-rename-back.
+const referenceCS = new Map();
+
+// Rewrites the Ref CS column for whoever occupies each row now. Called at the top of
+// every table fill. A player with no saved value gets a blank cell and no +/-.
+function syncReferenceCS(players) {
+    const rows = document.getElementById('playersTable').querySelectorAll('tr:not(:first-child)');
+    const cells = Array.from(rows).map(row => row.querySelector('.reference-col'));
+    if (!cells.some(Boolean)) return;
+
+    const usedPerName = new Map();
+    cells.forEach((cell, i) => {
+        if (!cell) return;
+        const name = players[i]?.name ?? '';
+        const saved = referenceCS.get(name) ?? [];
+        const used = usedPerName.get(name) ?? 0;
+        usedPerName.set(name, used + 1);
+        cell.textContent = saved[used] !== undefined ? saved[used] : '';
+    });
+}
+
+// Saved CS for this row, or null when this player has no reference value
+function getReferenceValue(referenceCell) {
+    if (!referenceCell || referenceCell.textContent.trim() === '') return null;
+    const value = parseFloat(referenceCell.textContent);
+    return isNaN(value) ? null : value;
+}
+
 function removeReferenceCS() {
+    referenceCS.clear();
     const table = document.getElementById('playersTable');
     const headerRow = table.querySelector('tr');
     const ths = Array.from(headerRow.children);
@@ -881,7 +912,9 @@ button.addEventListener("click", () => {
 
     const rows = table.querySelectorAll("tr:not(:first-child)");
 
-    rows.forEach(row => {
+    referenceCS.clear();
+
+    rows.forEach((row, idx) => {
         const finalPointsCell = row.querySelector(".final-points");
         const finalValue = parseFloat(finalPointsCell.textContent) || 0;
 
@@ -893,7 +926,10 @@ button.addEventListener("click", () => {
             row.appendChild(refCell);
         }
 
-        // Save current final value
+        // Save current final value against the player it belongs to
+        const refName = document.getElementById(`playerName${idx}`)?.value ?? `Player ${idx}`;
+        if (!referenceCS.has(refName)) referenceCS.set(refName, []);
+        referenceCS.get(refName).push(finalValue);
         refCell.textContent = finalValue;
 
         // Reset (+/-) highlights
@@ -1966,6 +2002,8 @@ function fillTableUnified(players, results, simConfig, siabSwapTime = null) {
     const tachImage = '<img src="https://staabass.netlify.app/images/afx_tachyon_stone_4.png" width="15" height="15" alt="Tach" align="center">';
     const quantImage = '<img src="https://staabass.netlify.app/images/afx_quantum_stone_4.png" width="15" height="15" alt="Tach" align="center">';
 
+    syncReferenceCS(players);
+
     const siabActive = siabSwapTime !== null;
 
     // Optional SIAB info display
@@ -2079,8 +2117,8 @@ function fillTableUnified(players, results, simConfig, siabSwapTime = null) {
 
         // Reference column check
         const referenceCell = rows[i].querySelector(".reference-col");
-        if (referenceCell) {
-            const referenceValue = parseFloat(referenceCell.textContent) || 0;
+        const referenceValue = getReferenceValue(referenceCell);
+        if (referenceValue !== null) {
             const diff = finalValue - referenceValue;
 
             if (diff > 0) {
@@ -2193,6 +2231,8 @@ function fillTable2SIAB(players, completionTime, targetEggAmount, duration, tswa
 
     if (numPlayers === 0) return; // No players, no action
 
+    syncReferenceCS(players);
+
     const rows = table.getElementsByTagName('tr');
     maxCS = 0;
     meanCS = 0;
@@ -2287,9 +2327,9 @@ function fillTable2SIAB(players, completionTime, targetEggAmount, duration, tswa
 
         // check if reference column exists
         const referenceCell = rows[i].querySelector(".reference-col");
+        const referenceValue = getReferenceValue(referenceCell);
 
-        if (referenceCell) {
-            const referenceValue = parseFloat(referenceCell.textContent) || 0;
+        if (referenceValue !== null) {
             const diff = finalValue - referenceValue;
 
             // set text with difference
@@ -2345,6 +2385,8 @@ function fillTable2(players, completionTime, targetEggAmount, duration, new2p0) 
     const table = document.getElementById('playersTable');
 
     if (numPlayers === 0) return;
+
+    syncReferenceCS(players);
 
     const rows = table.getElementsByTagName('tr');
     maxCS = 0;
@@ -2408,9 +2450,9 @@ function fillTable2(players, completionTime, targetEggAmount, duration, new2p0) 
 
         // check if reference column exists
         const referenceCell = rows[i].querySelector(".reference-col");
+        const referenceValue = getReferenceValue(referenceCell);
 
-        if (referenceCell) {
-            const referenceValue = parseFloat(referenceCell.textContent) || 0;
+        if (referenceValue !== null) {
             const diff = finalValue - referenceValue;
 
             // set text with difference
